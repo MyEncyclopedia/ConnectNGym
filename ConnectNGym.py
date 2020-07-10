@@ -3,7 +3,7 @@ import copy
 import gym
 from gym import spaces
 
-from connect_n_gym.PyGameConnectN import PyGameBoard
+from PyGameConnectN import PyGameBoard
 
 REWARD_A = 1
 REWARD_B = -1
@@ -25,7 +25,6 @@ class ConnectNGym(gym.Env):
 
     def reset(self):
         self.boardGame = PyGameBoard(board_size=self.grid_num, connect_num=self.connect_num)
-        # return self.get_state()
         return copy.deepcopy(self.boardGame.connectNGame)
 
     def step(self, action):
@@ -54,9 +53,6 @@ class ConnectNGym(gym.Env):
             reward = result
 
         return copy.deepcopy(self.boardGame.connectNGame), reward, not result is None, None
-
-    # def get_state(self):
-    #     return self.boardGame.getStatus(), self.boardGame.getCurrentPlayer()
 
     def render(self, mode='human', close=False):
         self.action = self.boardGame.next_user_input()
