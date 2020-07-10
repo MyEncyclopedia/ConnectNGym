@@ -15,12 +15,12 @@ class Strategy(ABC):
         super().__init__()
 
     @abstractmethod
-    def action(self, game) -> Tuple[int, Tuple[int, int]]:
+    def action(self, game: ConnectNGame) -> Tuple[int, Tuple[int, int]]:
         pass
 
 
 class MinimaxStrategy(Strategy):
-    def action(self, game) -> Tuple[int, Tuple[int, int]]:
+    def action(self, game: ConnectNGame) -> Tuple[int, Tuple[int, int]]:
         self.game = copy.deepcopy(game)
         result, move = self.minimax()
         return result, move
@@ -66,7 +66,7 @@ class MinimaxDPStrategy(Strategy):
         return result, move
 
     @lru_cache(maxsize=None)
-    def minimax_dp(self, gameState) -> Tuple[int, Tuple[int, int]]:
+    def minimax_dp(self, gameState: Tuple[Tuple[int, ...]]) -> Tuple[int, Tuple[int, int]]:
         game = self.game
         bestMove = None
         assert not game.gameOver
@@ -101,12 +101,12 @@ class MinimaxDPStrategy(Strategy):
 
 
 class AlphaBetaStrategy(Strategy):
-    def action(self, game) -> Tuple[int, Tuple[int, int]]:
+    def action(self, game: ConnectNGame) -> Tuple[int, Tuple[int, int]]:
         self.game = game
         result, move = self.alpha_beta(self.game.getStatus(), -math.inf, math.inf)
         return result, move
 
-    def alpha_beta(self, status, alpha=None, beta=None) -> Tuple[int, Tuple[int, int]]:
+    def alpha_beta(self, gameStatus: Tuple[Tuple[int, ...]], alpha:int=None, beta:int=None) -> Tuple[int, Tuple[int, int]]:
         game = self.game
         bestMove = None
         assert not game.gameOver
@@ -143,14 +143,14 @@ class AlphaBetaStrategy(Strategy):
 
 
 class AlphaBetaDPStrategy(Strategy):
-    def action(self, game) -> Tuple[int, Tuple[int, int]]:
+    def action(self, game: ConnectNGame) -> Tuple[int, Tuple[int, int]]:
         self.game = game
         self.alphaBetaStack = [(-math.inf, math.inf)]
         result, move = self.alpha_beta_dp(self.game.getStatus())
         return result, move
 
     @lru_cache(maxsize=None)
-    def alpha_beta_dp(self, status) -> Tuple[int, Tuple[int, int]]:
+    def alpha_beta_dp(self, gameStatus: Tuple[Tuple[int, ...]]) -> Tuple[int, Tuple[int, int]]:
         alpha, beta = self.alphaBetaStack[-1]
         game = self.game
         bestMove = None

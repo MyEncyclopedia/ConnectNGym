@@ -20,7 +20,7 @@ class ConnectNGame:
         self.remainingPosNum = board_size * board_size
         self.actionStack = []
 
-    def move(self, r: int, c: int):
+    def move(self, r: int, c: int) -> int:
         """
 
         :param r:
@@ -91,11 +91,11 @@ class ConnectNGame:
     def getAvailablePositions(self) -> List[Tuple[int, int]]:
         return [(i,j) for i in range(self.board_size) for j in range(self.board_size) if self.board[i][j] == ConnectNGame.AVAILABLE]
 
-    def getStatus(self):
+    def getStatus(self) -> Tuple[Tuple[int, ...]]:
         return tuple([tuple(self.board[i]) for i in range(self.board_size)])
 
 
-    def checkAction(self, r, c):
+    def checkAction(self, r: int, c: int) -> bool:
         return self.board[r][c] == ConnectNGame.AVAILABLE
 
     def drawText(self):
