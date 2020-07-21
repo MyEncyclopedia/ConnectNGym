@@ -24,35 +24,30 @@ class PyGameBoard:
         self.going = True
 
 
-    def next_step(self):
-        self.action = None
-        while not self.action:
-            self.update()
-            self.render()
-            self.clock.tick(60)
-        return self.action
-
-    def update(self):
-        for e in pygame.event.get():
-            if e.type == pygame.QUIT:
-                self.going = False
-            elif e.type == pygame.MOUSEBUTTONDOWN:
-                self.handle_key_event(e)
-
-    def next_user_input(self):
-        self.action = None
-        while not self.action:
-            self.wait_user_input()
-            self.render()
-            self.clock.tick(60)
-        return self.action
-
-    def wait_user_input(self):
+    def check_event(self):
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 self.going = False
             elif e.type == pygame.MOUSEBUTTONDOWN:
                 self.handle_user_input(e)
+
+    def next_user_input(self):
+        self.action = None
+        while not self.action:
+            self.check_event()
+            self.render()
+            self.clock.tick(60)
+        return self.action
+
+
+    def display(self, sec = 2):
+        tick_num = sec * 1000
+        while tick_num >= 0:
+            pygame.event.get()
+            self.render()
+            passed = self.clock.tick(1)
+            print(tick_num)
+            tick_num -= passed
 
     # proxy methods
     def move(self, r: int, c: int):
@@ -83,19 +78,19 @@ class PyGameBoard:
 
         pygame.display.update()
 
-    def handle_key_event(self, e):
-        origin_x = self.start_x - self.edge_size
-        origin_y = self.start_y - self.edge_size
-        size = (self.board_size - 1) * self.grid_size + self.edge_size * 2
-        pos = e.pos
-        if origin_x <= pos[0] <= origin_x + size and origin_y <= pos[1] <= origin_y + size:
-            if not self.connectNGame.gameOver:
-                x = pos[0] - origin_x
-                y = pos[1] - origin_y
-                r = int(y // self.grid_size)
-                c = int(x // self.grid_size)
-                if self.connectNGame.move(r, c):
-                    pass
+    # def handle_key_event(self, e):
+    #     origin_x = self.start_x - self.edge_size
+    #     origin_y = self.start_y - self.edge_size
+    #     size = (self.board_size - 1) * self.grid_size + self.edge_size * 2
+    #     pos = e.pos
+    #     if origin_x <= pos[0] <= origin_x + size and origin_y <= pos[1] <= origin_y + size:
+    #         if not self.connectNGame.gameOver:
+    #             x = pos[0] - origin_x
+    #             y = pos[1] - origin_y
+    #             r = int(y // self.grid_size)
+    #             c = int(x // self.grid_size)
+    #             if self.connectNGame.move(r, c):
+    #                 pass
 
     def handle_user_input(self, e):
         origin_x = self.start_x - self.edge_size
@@ -144,7 +139,8 @@ if __name__ == '__main__':
     # game = PyGameBoard(board_size=15, connect_num=5)
     game = PyGameBoard()
     while game.going:
-        game.next_step()
+        pos = game.next_user_input()
+        game.move(*pos)
 
     pygame.quit()
 

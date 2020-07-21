@@ -1,4 +1,5 @@
 import copy
+import time
 
 import gym
 from gym import spaces
@@ -18,14 +19,15 @@ class ConnectNGym(gym.Env):
         self.action_space = spaces.Discrete(grid_num* grid_num)
         self.observation_space = spaces.Discrete(grid_num * grid_num)
 
-        self.boardGame = PyGameBoard(board_size=grid_num, connect_num=connect_num)
+        # self.boardGame = PyGameBoard(board_size=grid_num, connect_num=connect_num)
 
         self.seed()
-        self.reset()
+        # self.reset()
 
-    def reset(self):
+    def reset(self) -> PyGameBoard:
         self.boardGame = PyGameBoard(board_size=self.grid_num, connect_num=self.connect_num)
-        return copy.deepcopy(self.boardGame.connectNGame)
+        # return copy.deepcopy(self.boardGame.connectNGame)
+        return self.boardGame
 
     def step(self, action):
         """Step environment by action.
@@ -71,8 +73,9 @@ class ConnectNGym(gym.Env):
     def get_available_actions(self):
         return self.boardGame.getAvailablePositions()
 
-    def show_board(self, gui=False):
+    def show_board(self, gui=False, sec=2):
         if not gui:
             self.boardGame.connectNGame.drawText()
+            time.sleep(sec)
         else:
-            pass
+            self.boardGame.display(sec=sec)
