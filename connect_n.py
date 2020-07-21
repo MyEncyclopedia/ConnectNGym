@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
-class ConnectNGame:
 
+class ConnectNGame:
     PLAYER_A = 1
     PLAYER_B = -1
     AVAILABLE = 0
@@ -9,7 +9,7 @@ class ConnectNGame:
     RESULT_A_WIN = 1
     RESULT_B_WIN = -1
 
-    def __init__(self, N:int = 3, board_size:int = 3):
+    def __init__(self, N: int = 3, board_size: int = 3):
         assert N <= board_size
         self.N = N
         self.board_size = board_size
@@ -89,11 +89,11 @@ class ConnectNGame:
         return result
 
     def getAvailablePositions(self) -> List[Tuple[int, int]]:
-        return [(i,j) for i in range(self.board_size) for j in range(self.board_size) if self.board[i][j] == ConnectNGame.AVAILABLE]
+        return [(i, j) for i in range(self.board_size) for j in range(self.board_size) if
+                self.board[i][j] == ConnectNGame.AVAILABLE]
 
     def getStatus(self) -> Tuple[Tuple[int, ...]]:
         return tuple([tuple(self.board[i]) for i in range(self.board_size)])
-
 
     def checkAction(self, r: int, c: int) -> bool:
         return self.board[r][c] == ConnectNGame.AVAILABLE
@@ -104,7 +104,8 @@ class ConnectNGame:
         for r in range(self.N):
             row = ''
             for c in range(self.N):
-                row += 'O' if self.board[r][c] == ConnectNGame.PLAYER_A else 'X' if self.board[r][c] == ConnectNGame.PLAYER_B else '.'
+                row += 'O' if self.board[r][c] == ConnectNGame.PLAYER_A else 'X' if self.board[r][
+                                                                                        c] == ConnectNGame.PLAYER_B else '.'
             print(row)
         print('------')
 
@@ -117,4 +118,3 @@ if __name__ == '__main__':
     # print(minimax(tic_tac_toe, True))
     # print(minimax_dp(tic_tac_toe, tic_tac_toe.getStatus()))
     # print(alpha_beta(tic_tac_toe, tic_tac_toe.getStatus(), -math.inf, math.inf))
-

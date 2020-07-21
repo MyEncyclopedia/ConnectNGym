@@ -8,7 +8,7 @@ from connect_n import ConnectNGame
 class PyGameBoard:
 
     def __init__(self, board_size=3, connect_num=3):
-        self.grid_size = 10
+        self.grid_size = 30
         self.start_x, self.start_y = 30, 50
         self.edge_size = self.grid_size / 2
         self.board_size = board_size
@@ -18,7 +18,7 @@ class PyGameBoard:
         pygame.init()
 
         self.screen = pygame.display.set_mode((800, 600))
-        pygame.display.set_caption("TTT")
+        pygame.display.set_caption(f"Connect-{connect_num}, {board_size}x{board_size}")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(pygame.font.get_default_font(), 24)
         self.going = True
@@ -72,11 +72,14 @@ class PyGameBoard:
 
     def render(self):
         self.screen.fill((255, 255, 255))
-        self.screen.blit(self.font.render("FPS: {0:.2F}".format(self.clock.get_fps()), True, (0, 0, 0)), (10, 10))
+        # self.screen.blit(self.font.render("FPS: {0:.2F}".format(self.clock.get_fps()), True, (0, 0, 0)), (10, 10))
 
         self.draw(self.screen)
         if self.connectNGame.gameOver:
-            self.screen.blit(self.font.render("{0} Win".format("Black" if self.connectNGame.gameResult == ConnectNGame.PLAYER_A else "White"), True, (0, 0, 0)), (500, 10))
+            title = f"Connect-{self.connectNGame.N}, {self.connectNGame.board_size}x{self.connectNGame.board_size}"
+            winner_msg = "{0} Win".format("Black" if self.connectNGame.gameResult == ConnectNGame.PLAYER_A else "White")
+            title = "Game Over " + winner_msg + title
+            pygame.display.set_caption(title)
 
         pygame.display.update()
 
@@ -138,6 +141,7 @@ class PyGameBoard:
 
 
 if __name__ == '__main__':
+    # game = PyGameBoard(board_size=15, connect_num=5)
     game = PyGameBoard()
     while game.going:
         game.next_step()

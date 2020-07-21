@@ -18,10 +18,8 @@ class StrategyAgent(object):
         self.strategy = strategy
 
     def act(self, game, available_actions):
-        # s = MinimaxDPStrategy(game)
-        s = MinimaxStrategy(game)
-        result, move = s.action()
-        # print(f'player={game.currentPlayer} result={result}')
+        s = MinimaxStrategy()
+        result, move = s.action(game)
         assert move in available_actions
         return move
 

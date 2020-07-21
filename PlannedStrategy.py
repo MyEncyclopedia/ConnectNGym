@@ -95,6 +95,6 @@ class PlannedMinimaxStrategy(Strategy):
 
 
 if __name__ == '__main__':
-    connectNGame = ConnectNGame(N=4, board_size=5)
+    connectNGame = ConnectNGame(N=3, board_size=3)
 
     strategy = PlannedMinimaxStrategy(connectNGame)
