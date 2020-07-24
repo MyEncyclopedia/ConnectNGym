@@ -12,14 +12,31 @@ class PlannedMinimaxStrategy(Strategy):
         self.game = copy.deepcopy(game)
         self.dpMap = {}  # game_status => result
         self.result = self.minimax()
-        # print(self.result)
+        print(self.result)
 
     def action(self, game: ConnectNGame) -> Tuple[int, Tuple[int, int]]:
-        gameStatus = game.getStatus()
+        game = copy.deepcopy(game)
 
-        for pos in game.getAvailablePositions():
+        bestResult = game.currentPlayer * -1  # assume opponent win as worst result
+        bestMove = None
+        for move in game.getAvailablePositions():
+            game.move(move)
+            status = game.getStatus()
+            game.undo()
 
-        return result
+            result = self.dpMap[status]
+
+            if game.currentPlayer == ConnectNGame.PLAYER_A:
+                bestResult = max(bestResult, result)
+            else:
+                bestResult = min(bestResult, result)
+            # update bestMove if any improvement
+            bestMove = move if bestResult == result else bestMove
+
+            if bestResult == game.currentPlayer:
+                return bestResult, move
+
+        return bestResult, bestMove
 
 
     def minimax(self) -> int:
