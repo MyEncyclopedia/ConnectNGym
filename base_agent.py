@@ -31,14 +31,21 @@ class HumanAgent(BaseAgent):
     def act(self, game: PyGameBoard, available_actions):
         return game.next_user_input()
 
-def play():
-    env = ConnectNGym(grid_num=3, connect_num=3)
-    pygameBoard: PyGameBoard = env.reset()
+def play_human_vs_human(env: ConnectNGym):
+    play(env, HumanAgent(), AIAgent(MinimaxStrategy()))
 
-    plannedMinimax = AIAgent(PlannedMinimaxStrategy(pygameBoard.connectNGame))
-    agents = [HumanAgent(), AIAgent(MinimaxStrategy())]
-    agents = [HumanAgent(), plannedMinimax]
-    agents = [plannedMinimax, plannedMinimax]
+def play_human_vs_ai(env: ConnectNGym):
+    pygameBoard: PyGameBoard = env.reset()
+    plannedMinimaxAgent = AIAgent(PlannedMinimaxStrategy(pygameBoard.connectNGame))
+    play(env, HumanAgent(), plannedMinimaxAgent)
+
+def play_ai_vs_ai(env: ConnectNGym):
+    pygameBoard: PyGameBoard = env.reset()
+    plannedMinimaxAgent = AIAgent(PlannedMinimaxStrategy(pygameBoard.connectNGame))
+    play(env, plannedMinimaxAgent, plannedMinimaxAgent)
+
+def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent):
+    agents = [agent1, agent2]
 
     while True:
         pygameBoard: PyGameBoard = env.reset()
@@ -60,4 +67,7 @@ def play():
 
 
 if __name__ == '__main__':
-    play()
+    env = ConnectNGym(grid_num=3, connect_num=3)
+    play_ai_vs_ai(env)
+
+
