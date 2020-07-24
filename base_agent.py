@@ -2,8 +2,9 @@
 import random
 
 from ConnectNGym import ConnectNGym
+from PlannedStrategy import PlannedMinimaxStrategy
 from PyGameConnectN import PyGameBoard
-from strategy import MinimaxStrategy
+from strategy import MinimaxStrategy, Strategy
 
 
 class BaseAgent(object):
@@ -13,17 +14,16 @@ class BaseAgent(object):
     def act(self, game:PyGameBoard, available_actions):
         return random.choice(available_actions)
 
-class StrategyAgent(object):
-    def __init__(self, strategy):
+class AIAgent(BaseAgent):
+    def __init__(self, strategy: Strategy):
         self.strategy = strategy
 
     def act(self, game: PyGameBoard, available_actions):
-        s = MinimaxStrategy()
-        result, move = s.action(game.connectNGame)
+        result, move = self.strategy.action(game.connectNGame)
         assert move in available_actions
         return move
 
-class HumanAgent(object):
+class HumanAgent(BaseAgent):
     def __init__(self):
         pass
 
@@ -32,17 +32,18 @@ class HumanAgent(object):
 
 def play():
     env = ConnectNGym()
-    # agents = [StrategyAgent(None), StrategyAgent(None)]
-    agents = [HumanAgent(), StrategyAgent(None)]
 
-    game: PyGameBoard = env.reset()
+    pygameBoard: PyGameBoard = env.reset()
+    # agents = [HumanAgent(), AIAgent(MinimaxStrategy())]
+    agents = [HumanAgent(), AIAgent(PlannedMinimaxStrategy(pygameBoard.connectNGame))]
+
     done = False
     env.show_board(True)
     agent_id = 0
     while not done:
         available_actions = env.get_available_actions()
         agent = agents[agent_id]
-        action = agent.act(game, available_actions)
+        action = agent.act(pygameBoard, available_actions)
         _, reward, done, info = env.step(action)
         env.show_board(True)
 

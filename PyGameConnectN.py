@@ -47,7 +47,7 @@ class PyGameBoard:
             pygame.event.get()
             self.render()
             passed = self.clock.tick(1)
-            print(tick_num)
+            # print(tick_num)
             tick_num -= passed
 
     # proxy methods
@@ -97,7 +97,7 @@ class PyGameBoard:
 
     def draw(self):
         screen = self.screen
-        pygame.draw.rect(screen, (185, 122, 87),
+        pygame.draw.rect(screen, (192, 192, 192), #(185, 122, 87),
                          [self.start_x - self.edge_size, self.start_y - self.edge_size,
                           (self.board_size - 1) * self.grid_size + self.edge_size * 2, (self.board_size - 1) * self.grid_size + self.edge_size * 2], 0)
 
