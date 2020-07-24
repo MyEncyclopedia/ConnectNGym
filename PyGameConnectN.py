@@ -9,7 +9,7 @@ from connect_n import ConnectNGame
 class PyGameBoard:
 
     def __init__(self, board_size=3, connect_num=3):
-        self.grid_size = 30
+        self.grid_size = 40
         self.start_x, self.start_y = 30, 50
         self.edge_size = self.grid_size / 2
         self.board_size = board_size
@@ -18,7 +18,9 @@ class PyGameBoard:
 
         pygame.init()
 
-        self.screen = pygame.display.set_mode((800, 600))
+        # self.screen = pygame.display.set_mode((800, 600))
+        window_size = max(250, self.grid_size * board_size + 50)
+        self.screen = pygame.display.set_mode((window_size, window_size))
         pygame.display.set_caption(f"Connect-{connect_num}, {board_size}x{board_size}")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(pygame.font.get_default_font(), 24)

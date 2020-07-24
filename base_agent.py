@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import random
+import time
 
 from ConnectNGym import ConnectNGym
 from PlannedStrategy import PlannedMinimaxStrategy
@@ -31,27 +32,32 @@ class HumanAgent(BaseAgent):
         return game.next_user_input()
 
 def play():
-    env = ConnectNGym()
-
+    env = ConnectNGym(grid_num=3, connect_num=3)
     pygameBoard: PyGameBoard = env.reset()
-    # agents = [HumanAgent(), AIAgent(MinimaxStrategy())]
-    agents = [HumanAgent(), AIAgent(PlannedMinimaxStrategy(pygameBoard.connectNGame))]
 
-    done = False
-    env.show_board(True)
-    agent_id = 0
-    while not done:
-        available_actions = env.get_available_actions()
-        agent = agents[agent_id]
-        action = agent.act(pygameBoard, available_actions)
-        _, reward, done, info = env.step(action)
+    plannedMinimax = AIAgent(PlannedMinimaxStrategy(pygameBoard.connectNGame))
+    agents = [HumanAgent(), AIAgent(MinimaxStrategy())]
+    agents = [HumanAgent(), plannedMinimax]
+    agents = [plannedMinimax, plannedMinimax]
+
+    while True:
+        pygameBoard: PyGameBoard = env.reset()
+        done = False
         env.show_board(True)
+        agent_id = -1
+        while not done:
+            agent_id = (agent_id + 1) % 2
+            available_actions = env.get_available_actions()
+            agent = agents[agent_id]
+            action = agent.act(pygameBoard, available_actions)
+            _, reward, done, info = env.step(action)
+            env.show_board(True)
 
-        if done:
-            print(reward)
-            break
+            if done:
+                print(f'result={reward}')
+                time.sleep(3)
+                break
 
-        agent_id = (agent_id + 1) % 2
 
 if __name__ == '__main__':
     play()
