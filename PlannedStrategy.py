@@ -1,31 +1,26 @@
 import copy
 import math
-from typing import Tuple
+from typing import Tuple, List
 
 from connect_n import ConnectNGame
 from strategy import Strategy
 
 
 class PlannedMinimaxStrategy(Strategy):
-    def __init__(self, game):
+    def __init__(self, game: ConnectNGame):
         super().__init__()
         self.game = copy.deepcopy(game)
-        self.dpMap = {}
+        self.dpMap = {}  # game_status => result
         self.result = self.minimax()
-        print(self.result)
+        # print(self.result)
 
-    def action(self, game) -> Tuple[int, Tuple[int, int]]:
-        # self.game = copy.deepcopy(game)
+    def action(self, game: ConnectNGame) -> Tuple[int, Tuple[int, int]]:
+        gameStatus = game.getStatus()
 
-        self.dpMap = {}
+        for pos in game.getAvailablePositions():
 
         return result
 
-    def updateDP(self, status, result):
-        similarStates = self.similarStatus(status)
-        for s in similarStates:
-            if not s in self.dpMap:
-                self.dpMap[s] = result
 
     def minimax(self) -> int:
         similarStates = self.similarStatus(self.game.getStatus())
@@ -51,9 +46,9 @@ class PlannedMinimaxStrategy(Strategy):
                 ret = max(ret, result)
                 bestMove = move if ret == result else bestMove
                 if ret == 1:
-                    self.updateDP(thisState, ret)
+                    self._updateDP(thisState, ret)
                     return 1
-            self.updateDP(thisState, ret)
+            self._updateDP(thisState, ret)
             return ret
         else:
             ret = math.inf
@@ -67,13 +62,18 @@ class PlannedMinimaxStrategy(Strategy):
                 ret = min(ret, result)
                 bestMove = move if ret == result else bestMove
                 if ret == -1:
-                    self.updateDP(thisState, ret)
+                    self._updateDP(thisState, ret)
                     return -1
-            self.updateDP(thisState, ret)
+            self._updateDP(thisState, ret)
             return ret
 
+    def _updateDP(self, status: Tuple[Tuple[int, ...]], result: int):
+        similarStates = self.similarStatus(status)
+        for s in similarStates:
+            if not s in self.dpMap:
+                self.dpMap[s] = result
 
-    def similarStatus(self, status):
+    def similarStatus(self, status: Tuple[Tuple[int, ...]]) -> List[Tuple[Tuple[int, ...]]]:
         ret = []
         rotatedS = status
         for _ in range(4):
@@ -83,13 +83,13 @@ class PlannedMinimaxStrategy(Strategy):
         return ret
 
 
-    def rotate(self, s):
-        N = len(s)
+    def rotate(self, status: Tuple[Tuple[int, ...]]) -> Tuple[Tuple[int, ...]]:
+        N = len(status)
         board = [[ConnectNGame.AVAILABLE] * N for _ in range(N)]
 
         for r in range(N):
             for c in range(N):
-                board[c][N-1-r] = s[r][c]
+                board[c][N-1-r] = status[r][c]
 
         return tuple([tuple(board[i]) for i in range(N)])
 

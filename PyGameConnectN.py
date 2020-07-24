@@ -1,6 +1,7 @@
 from typing import List, Tuple
 
 import pygame
+from pygame.event import Event
 
 from connect_n import ConnectNGame
 
@@ -31,7 +32,7 @@ class PyGameBoard:
             elif e.type == pygame.MOUSEBUTTONDOWN:
                 self.handle_user_input(e)
 
-    def next_user_input(self):
+    def next_user_input(self) -> Tuple[int, int]:
         self.action = None
         while not self.action:
             self.check_event()
@@ -40,7 +41,7 @@ class PyGameBoard:
         return self.action
 
 
-    def display(self, sec = 2):
+    def display(self, sec=2):
         tick_num = sec * 1000
         while tick_num >= 0:
             pygame.event.get()
@@ -50,26 +51,26 @@ class PyGameBoard:
             tick_num -= passed
 
     # proxy methods
-    def move(self, r: int, c: int):
+    def move(self, r: int, c: int) -> int:
         return self.connectNGame.move(r, c)
 
-    def isGameOver(self):
+    def isGameOver(self) -> bool:
         return self.connectNGame.gameOver
 
     def getAvailablePositions(self) -> List[Tuple[int, int]]:
         return self.connectNGame.getAvailablePositions()
 
-    def getCurrentPlayer(self):
+    def getCurrentPlayer(self) -> int:
         return self.connectNGame.currentPlayer
 
-    def getStatus(self):
+    def getStatus(self) -> Tuple[Tuple[int, ...]]:
         return self.connectNGame.getStatus()
 
     def render(self):
         self.screen.fill((255, 255, 255))
         # self.screen.blit(self.font.render("FPS: {0:.2F}".format(self.clock.get_fps()), True, (0, 0, 0)), (10, 10))
 
-        self.draw(self.screen)
+        self.draw()
         if self.connectNGame.gameOver:
             title = f"Connect-{self.connectNGame.N}, {self.connectNGame.board_size}x{self.connectNGame.board_size}"
             winner_msg = "{0} Win".format("Black" if self.connectNGame.gameResult == ConnectNGame.PLAYER_A else "White")
@@ -78,21 +79,7 @@ class PyGameBoard:
 
         pygame.display.update()
 
-    # def handle_key_event(self, e):
-    #     origin_x = self.start_x - self.edge_size
-    #     origin_y = self.start_y - self.edge_size
-    #     size = (self.board_size - 1) * self.grid_size + self.edge_size * 2
-    #     pos = e.pos
-    #     if origin_x <= pos[0] <= origin_x + size and origin_y <= pos[1] <= origin_y + size:
-    #         if not self.connectNGame.gameOver:
-    #             x = pos[0] - origin_x
-    #             y = pos[1] - origin_y
-    #             r = int(y // self.grid_size)
-    #             c = int(x // self.grid_size)
-    #             if self.connectNGame.move(r, c):
-    #                 pass
-
-    def handle_user_input(self, e):
+    def handle_user_input(self, e: Event) -> Tuple[int, int]:
         origin_x = self.start_x - self.edge_size
         origin_y = self.start_y - self.edge_size
         size = (self.board_size - 1) * self.grid_size + self.edge_size * 2
@@ -108,7 +95,8 @@ class PyGameBoard:
                     self.action = (r, c)
                     return self.action
 
-    def draw(self, screen):
+    def draw(self):
+        screen = self.screen
         pygame.draw.rect(screen, (185, 122, 87),
                          [self.start_x - self.edge_size, self.start_y - self.edge_size,
                           (self.board_size - 1) * self.grid_size + self.edge_size * 2, (self.board_size - 1) * self.grid_size + self.edge_size * 2], 0)
