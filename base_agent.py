@@ -67,7 +67,7 @@ def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent):
 
 
 if __name__ == '__main__':
-    env = ConnectNGym(grid_num=4, connect_num=3)
+    env = ConnectNGym(grid_num=3, connect_num=3)
     # play_ai_vs_ai(env)
     play_human_vs_ai(env)
 

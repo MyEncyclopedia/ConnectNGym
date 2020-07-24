@@ -15,11 +15,11 @@ class PyGameBoard:
 
         pygame.init()
 
-        window_size = max(250, self.grid_size * board_size + 50)
+        window_size = max(300, self.grid_size * board_size + 80)
         self.screen = pygame.display.set_mode((window_size, window_size))
         pygame.display.set_caption(f"Connect-{connect_num}, {board_size}x{board_size}")
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.Font(pygame.font.get_default_font(), 24)
+        self.font = pygame.font.Font(pygame.font.get_default_font(), 20)
         self.going = True
 
 
@@ -66,14 +66,24 @@ class PyGameBoard:
 
     def _render(self):
         self.screen.fill((255, 255, 255))
-        # self.screen.blit(self.font.render("FPS: {0:.2F}".format(self.clock.get_fps()), True, (0, 0, 0)), (10, 10))
+        # print(self.clock.get_fps())
+        msg = None
+        if self.connectNGame.gameOver:
+            title = f"Game Over"
+            pygame.display.set_caption(title)
+            if self.connectNGame.gameResult == ConnectNGame.RESULT_TIE:
+                msg = 'Draw'
+            else:
+                msg = "{0} Win".format("Black" if self.connectNGame.gameResult == ConnectNGame.PLAYER_A else "White")
+        else:
+            msg = "{0} Turn".format("Black" if self.connectNGame.currentPlayer == ConnectNGame.PLAYER_A else "White")
+        self.screen.blit(self.font.render(msg, True, (0, 122, 255)),
+                         (self.grid_size * self.board_size + 30, 50))
 
         self._draw()
-        if self.connectNGame.gameOver:
-            title = f"Connect-{self.connectNGame.N}, {self.connectNGame.board_size}x{self.connectNGame.board_size}"
-            winner_msg = "{0} Win".format("Black" if self.connectNGame.gameResult == ConnectNGame.PLAYER_A else "White")
-            title = "Game Over " + winner_msg + title
-            pygame.display.set_caption(title)
+        # if self.connectNGame.gameOver:
+        #     winner_msg = "{0} Win".format("Black" if self.connectNGame.gameResult == ConnectNGame.PLAYER_A else "White")
+        #     title = "Game Over " + winner_msg + title
 
         pygame.display.update()
 
