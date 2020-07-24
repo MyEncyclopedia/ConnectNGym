@@ -33,9 +33,10 @@ class PlannedMinimaxStrategy(Strategy):
                 bestResult = min(bestResult, result)
             # update bestMove if any improvement
             bestMove = move if bestResult == result else bestMove
+            print(f'move {move} => {result}')
 
-            if bestResult == game.currentPlayer:
-                return bestResult, move
+            # if bestResult == game.currentPlayer:
+            #     return bestResult, move
 
         return bestResult, bestMove
 
@@ -45,7 +46,7 @@ class PlannedMinimaxStrategy(Strategy):
         for s in similarStates:
             if s in self.dpMap:
                 return self.dpMap[s]
-        # print(f'{len(self.game.actionStack)}: {len(self.dpMap)}')
+        print(f'{len(self.game.actionStack)}: {len(self.dpMap)}')
 
         game = self.game
         bestMove = None
@@ -60,9 +61,9 @@ class PlannedMinimaxStrategy(Strategy):
                 if result is None:
                     assert not game.gameOver
                     result = self.minimax(game.getStatus())
-                    self.dpMap[game.getStatus()] = result
+                    self._updateDP(game.getStatus(), result)
                 else:
-                    self.dpMap[game.getStatus()] = result
+                    self._updateDP(game.getStatus(), result)
                 game.undo()
                 ret = max(ret, result)
                 bestMove = move if ret == result else bestMove
@@ -76,9 +77,9 @@ class PlannedMinimaxStrategy(Strategy):
                 if result is None:
                     assert not game.gameOver
                     result = self.minimax(game.getStatus())
-                    self.dpMap[game.getStatus()] = result
+                    self._updateDP(game.getStatus(), result)
                 else:
-                    self.dpMap[game.getStatus()] = result
+                    self._updateDP(game.getStatus(), result)
                 game.undo()
                 ret = min(ret, result)
                 bestMove = move if ret == result else bestMove
