@@ -55,7 +55,6 @@ def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent):
 	while True:
 		env.reset()
 		done = False
-		env.show_board(True)
 		agent_id = -1
 		while not done:
 			agent_id = (agent_id + 1) % 2
@@ -63,7 +62,7 @@ def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent):
 			agent = agents[agent_id]
 			action = agent.act(pygameBoard, available_actions)
 			_, reward, done, info = env.step(action)
-			env.show_board(True)
+			env.render(True)
 
 			if done:
 				print(f'result={reward}')
@@ -75,5 +74,5 @@ if __name__ == '__main__':
 	pygameBoard = PyGameBoard(connectNGame=ConnectNGame(board_size=3, N=3))
 	env = ConnectNGym(pygameBoard)
 
-	# play_ai_vs_ai(env)
-	play_human_vs_ai(env)
+	play_ai_vs_ai(env)
+	# play_human_vs_ai(env)

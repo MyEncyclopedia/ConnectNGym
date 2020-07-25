@@ -15,8 +15,10 @@ REWARD_NONE = None
 
 class ConnectNGym(gym.Env):
 
-	def __init__(self, pygameBoard: PyGameBoard):
+	def __init__(self, pygameBoard: PyGameBoard, isGUI=True, displaySec=2):
 		self.pygameBoard = pygameBoard
+		self.isGUI = isGUI
+		self.displaySec = displaySec
 		self.action_space = spaces.Discrete(pygameBoard.board_size * pygameBoard.board_size)
 		self.observation_space = spaces.Discrete(pygameBoard.board_size * pygameBoard.board_size)
 		self.seed()
@@ -57,7 +59,7 @@ class ConnectNGym(gym.Env):
 
 		return copy.deepcopy(self.pygameBoard.connectNGame), reward, not result is None, None
 
-	def render(self, mode='human', close=False) -> Tuple[int, int]:
+	def render(self, mode='human'):
 		"""
 		Renders the environment.
 
@@ -82,25 +84,12 @@ class ConnectNGym(gym.Env):
 		Args:
 			mode (str): the mode to render with
 		"""
-		self.action = self.pygameBoard.next_user_input()
-		return self.action
-
-	# if close:
-	#     return
-	# if mode == 'human':
-	#     # self._show_board(print)  # NOQA
-	#     print('')
-	# else:
-	#     pass
-	#     # self._show_board(logging.info)
-	#     # logging.info('')
+		if not self.isGUI:
+			self.pygameBoard.connectNGame.drawText()
+			time.sleep(self.displaySec)
+		else:
+			self.pygameBoard.display(sec=self.displaySec)
 
 	def get_available_actions(self) -> List[Tuple[int, int]]:
 		return self.pygameBoard.getAvailablePositions()
 
-	def show_board(self, gui=False, sec=2):
-		if not gui:
-			self.pygameBoard.connectNGame.drawText()
-			time.sleep(sec)
-		else:
-			self.pygameBoard.display(sec=sec)
