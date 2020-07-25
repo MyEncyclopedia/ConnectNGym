@@ -36,7 +36,7 @@ class HumanAgent(BaseAgent):
 
 
 def play_human_vs_human(env: ConnectNGym):
-	play(env, HumanAgent(), AIAgent(MinimaxStrategy()))
+	play(env, HumanAgent(), HumanAgent())
 
 
 def play_human_vs_ai(env: ConnectNGym):
