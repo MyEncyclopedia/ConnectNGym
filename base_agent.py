@@ -5,6 +5,7 @@ import time
 from ConnectNGym import ConnectNGym
 from PlannedStrategy import PlannedMinimaxStrategy
 from PyGameConnectN import PyGameBoard
+from connect_n import ConnectNGame
 from strategy import MinimaxStrategy, Strategy
 
 
@@ -54,7 +55,7 @@ def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent):
 	agents = [agent1, agent2]
 
 	while True:
-		pygameBoard: PyGameBoard = env.reset()
+		env.reset()
 		done = False
 		env.show_board(True)
 		agent_id = -1
@@ -73,6 +74,8 @@ def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent):
 
 
 if __name__ == '__main__':
-	env = ConnectNGym(board_size=3, connect_num=3)
+	pygameBoard = PyGameBoard(connectNGame=ConnectNGame(board_size=3, N=3))
+	env = ConnectNGym(pygameBoard)
+
 	# play_ai_vs_ai(env)
 	play_human_vs_ai(env)
