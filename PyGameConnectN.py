@@ -77,6 +77,7 @@ class PyGameBoard:
 			else:
 				msg = "{0} Win".format("Black" if self.connectNGame.gameResult == ConnectNGame.PLAYER_A else "White")
 		else:
+			pygame.display.set_caption(f"Connect-{self.connect_num}, {self.board_size}x{self.board_size}")
 			msg = "{0} Turn".format("Black" if self.connectNGame.currentPlayer == ConnectNGame.PLAYER_A else "White")
 		self.screen.blit(self.font.render(msg, True, (0, 122, 255)),
 		                 (self.grid_size * self.board_size + 30, 50))
