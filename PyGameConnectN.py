@@ -7,19 +7,20 @@ from connect_n import ConnectNGame
 
 class PyGameBoard:
 
-	def __init__(self, board_size=3, connect_num=3):
+	def __init__(self, connectNGame: ConnectNGame):
+		self.connectNGame = connectNGame
+		self.board_size = connectNGame.board_size
+		self.connect_num = connectNGame.N
 		self.grid_size = 40
 		self.start_x, self.start_y = 30, 50
 		self.edge_size = self.grid_size / 2
-		self.board_size = board_size
-		self.connectNGame = ConnectNGame(N=connect_num, board_size=board_size)
 		self.action = None
 
 		pygame.init()
 
-		window_size = max(300, self.grid_size * board_size + 80)
+		window_size = max(300, self.grid_size * self.board_size + 80)
 		self.screen = pygame.display.set_mode((window_size, window_size))
-		pygame.display.set_caption(f"Connect-{connect_num}, {board_size}x{board_size}")
+		pygame.display.set_caption(f"Connect-{self.connect_num}, {self.board_size}x{self.board_size}")
 		self.clock = pygame.time.Clock()
 		self.font = pygame.font.Font(pygame.font.get_default_font(), 20)
 
@@ -106,9 +107,9 @@ class PyGameBoard:
 	def _draw(self):
 		screen = self.screen
 		pygame.draw.rect(screen, (192, 192, 192),
-						[self.start_x - self.edge_size, self.start_y - self.edge_size,
-						(self.board_size - 1) * self.grid_size + self.edge_size * 2,
-						(self.board_size - 1) * self.grid_size + self.edge_size * 2], 0)
+		                 [self.start_x - self.edge_size, self.start_y - self.edge_size,
+		                  (self.board_size - 1) * self.grid_size + self.edge_size * 2,
+		                  (self.board_size - 1) * self.grid_size + self.edge_size * 2], 0)
 
 		for r in range(self.board_size):
 			y = self.start_y + r * self.grid_size
@@ -135,7 +136,8 @@ class PyGameBoard:
 
 
 if __name__ == '__main__':
-	pygameBoard = PyGameBoard()
+	connectNGame = ConnectNGame()
+	pygameBoard = PyGameBoard(connectNGame)
 	while not pygameBoard.isGameOver():
 		pos = pygameBoard.next_user_input()
 		pygameBoard.move(*pos)
