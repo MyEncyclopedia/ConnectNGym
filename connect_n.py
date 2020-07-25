@@ -13,11 +13,11 @@ class ConnectNGame:
         assert N <= board_size
         self.N = N
         self.board_size = board_size
-        self.board = [[ConnectNGame.AVAILABLE] * board_size for _ in range(board_size)]
+        self.board = [[ConnectNGame.AVAILABLE] * self.board_size for _ in range(self.board_size)]
         self.gameOver = False
         self.gameResult = None
         self.currentPlayer = ConnectNGame.PLAYER_A
-        self.remainingPosNum = board_size * board_size
+        self.remainingPosNum = self.board_size * self.board_size
         self.actionStack = []
 
     def move(self, r: int, c: int) -> int:
@@ -97,6 +97,14 @@ class ConnectNGame:
 
     def checkAction(self, r: int, c: int) -> bool:
         return self.board[r][c] == ConnectNGame.AVAILABLE
+
+    def reset(self):
+        self.board = [[ConnectNGame.AVAILABLE] * self.board_size for _ in range(self.board_size)]
+        self.gameOver = False
+        self.gameResult = None
+        self.currentPlayer = ConnectNGame.PLAYER_A
+        self.remainingPosNum = self.board_size * self.board_size
+        self.actionStack = []
 
     def drawText(self):
         print('')
