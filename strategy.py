@@ -106,7 +106,8 @@ class AlphaBetaStrategy(Strategy):
         result, move = self.alpha_beta(self.game.getStatus(), -math.inf, math.inf)
         return result, move
 
-    def alpha_beta(self, gameStatus: Tuple[Tuple[int, ...]], alpha:int=None, beta:int=None) -> Tuple[int, Tuple[int, int]]:
+    def alpha_beta(self, gameStatus: Tuple[Tuple[int, ...]], alpha: int = None, beta: int = None) -> Tuple[
+        int, Tuple[int, int]]:
         game = self.game
         bestMove = None
         assert not game.gameOver
@@ -190,6 +191,7 @@ class AlphaBetaDPStrategy(Strategy):
                     return ret, move
             return ret, bestMove
 
+
 if __name__ == '__main__':
     tic_tac_toe = ConnectNGame(N=5, board_size=7)
     # strategy = MinimaxDPStrategy(tic_tac_toe)
@@ -215,4 +217,3 @@ if __name__ == '__main__':
         tic_tac_toe.move(action[0], action[1])
         tic_tac_toe.drawText()
         # print('------------------------------------------------------------')
-

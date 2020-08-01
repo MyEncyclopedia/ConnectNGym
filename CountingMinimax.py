@@ -62,4 +62,3 @@ if __name__ == '__main__':
     strategy = CountingMinimaxStrategy()
     strategy.action(tic_tac_toe)
     print(f'Game States Number {len(strategy.dpMap)}')
-
