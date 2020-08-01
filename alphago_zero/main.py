@@ -1,4 +1,3 @@
-
 import argparse
 import random
 from collections import deque
@@ -11,7 +10,8 @@ from alphago_zero.policy_value_net import PolicyValueNet
 from connect_n import ConnectNGame
 import numpy as np
 
-def get_equi_data(self, play_data):
+
+def get_equi_data(play_data: list):
     """augment the data set by rotation and flipping
     play_data: [(state, mcts_prob, winner_z), ..., ...]
     """
@@ -21,7 +21,7 @@ def get_equi_data(self, play_data):
             # rotate counterclockwise
             equi_state = np.array([np.rot90(s, i) for s in state])
             equi_mcts_prob = np.rot90(np.flipud(
-                mcts_porb.reshape(self.board_height, self.board_width)), i)
+                mcts_porb.reshape((state.shape[1], state.shape[1]))), i)
             extend_data.append((equi_state,
                                 np.flipud(equi_mcts_prob).flatten(),
                                 winner))
@@ -34,6 +34,63 @@ def get_equi_data(self, play_data):
     return extend_data
 
 
+def convertGameState(state: ConnectNGame) -> np.ndarray:
+    """return the board state from the perspective of the current player.
+    state shape: 4*width*height
+    """
+
+    square_state = np.zeros((4, state.board_size, state.board_size))
+    if state.actionStack:
+        actions = np.array(state.actionStack) # moves * 2
+        move_curr = actions[::2]
+        move_oppo = actions[1::2]
+        # todo eliminate for
+        for move in move_curr:
+            square_state[0][move] = 1.0
+        for move in move_oppo:
+            square_state[1][move] = 1.0
+        # indicate the last move location
+        square_state[2][actions[-1]] = 1.0
+    if len(state.actionStack) % 2 == 0:
+        square_state[3][:, :] = 1.0  # indicate the colour to play
+    return square_state[:, ::-1, :]
+
+def start_self_play(player: MCTSPlayer, args, is_shown=0):
+    """ start a self-play game using a MCTS player, reuse the search tree,
+    and store the self-play data: (state, mcts_probs, z) for training
+    """
+    game = ConnectNGame(board_size=args.board_size, N=args.n_in_row)
+    pygameBoard = PyGameBoard(connectNGame=game)
+
+    states: list[np.ndarray] = []
+    mcts_probs:list[np.ndarray] = []
+    current_players: list[int] = []
+    while True:
+        move, move_probs = player.get_action(pygameBoard, temp=args.temp, return_prob=1)
+        # store the data
+        states.append(convertGameState(pygameBoard))
+        mcts_probs.append(move_probs)
+        current_players.append(pygameBoard.getCurrentPlayer())
+        # perform a move
+        pygameBoard.move(move)
+        if is_shown:
+            pygameBoard.display()
+        end, winner = pygameBoard.connectNGame.gameOver, pygameBoard.connectNGame.gameResult
+        if end:
+            # winner from the perspective of the current player of each state
+            winners_z = np.zeros(len(current_players))
+            if winner != -1:
+                winners_z[np.array(current_players) == winner] = 1.0
+                winners_z[np.array(current_players) != winner] = -1.0
+            # reset MCTS root node
+            player.reset_player()
+            if is_shown:
+                if winner != -1:
+                    print("Game end. Winner is player:", winner)
+                else:
+                    print("Game end. Tie")
+            return winner, zip(states, mcts_probs, winners_z)
+
 
 def train(args):
     game = ConnectNGame(board_size=args.board_size, N=args.n_in_row)
@@ -43,18 +100,17 @@ def train(args):
 
     policy_value_net = PolicyValueNet(args.board_size, args.board_size)
     mcts_player = MCTSPlayer(policy_value_net.policy_value_fn,
-                                      c_puct=args.c_puct,
-                                      n_playout=args.n_playout,
-                                      is_selfplay=1)
+                             c_puct=args.c_puct,
+                             n_playout=args.n_playout,
+                             is_selfplay=1)
 
     def collect_selfplay_data(n_games=1):
         """collect self-play data for training"""
         for i in range(n_games):
-            winner, play_data = args.game.start_self_play(args.mcts_player,
-                                                          temp=args.temp)
+            winner, play_data = start_self_play(mcts_player, args)
             play_data = list(play_data)[:]
             # augment the data
-            # play_data = self.get_equi_data(play_data)
+            play_data = get_equi_data(play_data)
             data_buffer.extend(play_data)
             episode_len = len(play_data)
             return episode_len
@@ -108,7 +164,7 @@ def train(args):
     try:
         for i in range(args.game_batch_num):
             episode_len = collect_selfplay_data(args.play_batch_size)
-            print(f'batch i:{i+1}, episode_len:{episode_len}')
+            print(f'batch i:{i + 1}, episode_len:{episode_len}')
             if len(data_buffer) > args.batch_size:
                 loss, entropy = policy_update()
             # check the performance of the current model,
@@ -140,19 +196,19 @@ if __name__ == "__main__":
     parser.add_argument("--n_in_row", type=int, default=3)
     # training params
     parser.add_argument("--learning_rate", type=float, default=2e-3)
-    parser.add_argument("--lr_multiplier", type=float, default=1.0) # adaptively adjust the learning rate based on KL
-    parser.add_argument("--temp", type=float, default=1.0) # the temperature param
-    parser.add_argument("--n_playout", type=int, default=400) # num of simulations for each move
+    parser.add_argument("--lr_multiplier", type=float, default=1.0)  # adaptively adjust the learning rate based on KL
+    parser.add_argument("--temp", type=float, default=1.0)  # the temperature param
+    parser.add_argument("--n_playout", type=int, default=400)  # num of simulations for each move
     parser.add_argument("--c_puct", type=int, default=5)
     parser.add_argument("--buffer_size", type=int, default=10000)
-    parser.add_argument("--batch_size", type=int, default=256) # mini-batch size for training
+    parser.add_argument("--batch_size", type=int, default=256)  # mini-batch size for training
     parser.add_argument("--play_batch_size", type=int, default=1)
-    parser.add_argument("--epochs", type=int, default=5) # num of train_steps for each update
+    parser.add_argument("--epochs", type=int, default=5)  # num of train_steps for each update
     parser.add_argument("--kl_targ", type=float, default=0.02)
     parser.add_argument("--check_freq", type=int, default=50)
     parser.add_argument("--game_batch_num", type=int, default=1500)
     parser.add_argument("--best_win_ratio", type=float, default=0.0)
-    parser.add_argument("--pure_mcts_playout_num", type=int, default=1000) # num of simulations used for the pure mcts,
+    parser.add_argument("--pure_mcts_playout_num", type=int, default=1000)  # num of simulations used for the pure mcts,
     # which is used as the opponent to evaluate the trained policy
 
     args = parser.parse_args()
