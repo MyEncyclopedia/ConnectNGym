@@ -6,7 +6,7 @@ import torch
 
 from PyGameConnectN import PyGameBoard
 from alphago_zero.mcts_alphaZero import MCTSPlayer
-from alphago_zero.policy_value_net import PolicyValueNet
+from alphago_zero.policy_value_net import PolicyValueNet, convertGameState
 from connect_n import ConnectNGame
 import numpy as np
 
@@ -33,28 +33,6 @@ def get_equi_data(play_data: list):
                                 winner))
     return extend_data
 
-
-def convertGameState(state: ConnectNGame) -> np.ndarray:
-    """return the board state from the perspective of the current player.
-    state shape: 4*width*height
-    """
-
-    square_state = np.zeros((4, state.board_size, state.board_size))
-    if state.actionStack:
-        actions = np.array(state.actionStack) # moves * 2
-        move_curr = actions[::2]
-        move_oppo = actions[1::2]
-        # todo eliminate for
-        for move in move_curr:
-            square_state[0][move] = 1.0
-        for move in move_oppo:
-            square_state[1][move] = 1.0
-        # indicate the last move location
-        square_state[2][actions[-1]] = 1.0
-    if len(state.actionStack) % 2 == 0:
-        square_state[3][:, :] = 1.0  # indicate the colour to play
-    return square_state[:, ::-1, :]
-
 def start_self_play(player: MCTSPlayer, args, is_shown=0):
     """ start a self-play game using a MCTS player, reuse the search tree,
     and store the self-play data: (state, mcts_probs, z) for training
@@ -68,11 +46,11 @@ def start_self_play(player: MCTSPlayer, args, is_shown=0):
     while True:
         move, move_probs = player.get_action(pygameBoard, temp=args.temp, return_prob=1)
         # store the data
-        states.append(convertGameState(pygameBoard))
+        states.append(convertGameState(pygameBoard.connectNGame))
         mcts_probs.append(move_probs)
         current_players.append(pygameBoard.getCurrentPlayer())
         # perform a move
-        pygameBoard.move(move)
+        pygameBoard.move1D(move)
         if is_shown:
             pygameBoard.display()
         end, winner = pygameBoard.connectNGame.gameOver, pygameBoard.connectNGame.gameResult
@@ -127,7 +105,7 @@ def train(args):
                 state_batch,
                 mcts_probs_batch,
                 winner_batch,
-                args.learn_rate * args.lr_multiplier)
+                args.learning_rate * args.lr_multiplier)
             new_probs, new_v = policy_value_net.policy_value(state_batch)
             kl = np.mean(np.sum(old_probs * (
                     np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)),

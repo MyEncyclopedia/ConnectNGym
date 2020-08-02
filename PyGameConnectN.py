@@ -50,7 +50,7 @@ class PyGameBoard:
             tick_num -= passed
 
     # proxy methods
-    def move(self, pos: int) -> int:
+    def move1D(self, pos: int) -> int:
         r, c = pos // self.board_size, pos % self.board_size
         return self.connectNGame.move(r, c)
 
@@ -63,9 +63,8 @@ class PyGameBoard:
     def getAvailablePositions(self) -> List[Tuple[int, int]]:
         return self.connectNGame.getAvailablePositions()
 
-    def getAvailablePositionsAsInt(self) -> List[int]:
-        pos2d_lst = self.getAvailablePositions()
-        return [r * self.board_size + c for (r, c) in pos2d_lst]
+    def getAvailablePositions1D(self) -> List[int]:
+        return self.connectNGame.getAvailablePositions1D()
 
     def getCurrentPlayer(self) -> int:
         return self.connectNGame.currentPlayer

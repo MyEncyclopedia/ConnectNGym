@@ -116,24 +116,19 @@ class MCTS(object):
                 break
             # Greedily select next move.
             action, node = node.select(self._c_puct)
-            state.move(action)
+            state.move1D(action)
 
         # Evaluate the leaf using a network which outputs a list of
         # (action, probability) tuples p and also a score v in [-1, 1]
         # for the current player.
         action_probs, leaf_value = self._policy(state)
         # Check for end of game.
-        end, winner = state.game_end()
+        end, winner = state.gameOver, state.gameResult
         if not end:
             node.expand(action_probs)
         else:
             # for end state，return the "true" leaf_value
-            if winner == -1:  # tie
-                leaf_value = 0.0
-            else:
-                leaf_value = (
-                    1.0 if winner == state.get_current_player() else -1.0
-                )
+            return float(winner)
 
         # Update value and visit count of nodes in this traversal.
         node.update_recursive(-leaf_value)
@@ -185,7 +180,7 @@ class MCTSPlayer(object):
         self.mcts.update_with_move(-1)
 
     def get_action(self, board: PyGameBoard, temp=1e-3, return_prob=0):
-        sensible_moves = board.getAvailablePositionsAsInt()
+        sensible_moves = board.getAvailablePositions1D()
         # the pi vector returned by MCTS as in the alphaGo Zero paper
         move_probs = np.zeros(board.board_size * board.board_size)
         if len(sensible_moves) > 0:

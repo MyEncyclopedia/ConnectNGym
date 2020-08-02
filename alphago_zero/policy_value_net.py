@@ -11,6 +11,28 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 
+from connect_n import ConnectNGame
+
+def convertGameState(state: ConnectNGame) -> np.ndarray:
+    """return the board state from the perspective of the current player.
+    state shape: 4*width*height
+    """
+
+    square_state = np.zeros((4, state.board_size, state.board_size))
+    if state.actionStack:
+        actions = np.array(state.actionStack) # moves * 2
+        move_curr = actions[::2]
+        move_oppo = actions[1::2]
+        # todo eliminate for
+        for move in move_curr:
+            square_state[0][move] = 1.0
+        for move in move_oppo:
+            square_state[1][move] = 1.0
+        # indicate the last move location
+        square_state[2][actions[-1]] = 1.0
+    if len(state.actionStack) % 2 == 0:
+        square_state[3][:, :] = 1.0  # indicate the colour to play
+    return square_state[:, ::-1, :]
 
 def set_learning_rate(optimizer, lr):
     """Sets the learning rate to the given value"""
@@ -91,14 +113,14 @@ class PolicyValueNet():
             act_probs = np.exp(log_act_probs.data.numpy())
             return act_probs, value.data.numpy()
 
-    def policy_value_fn(self, board):
+    def policy_value_fn(self, board: ConnectNGame):
         """
         input: board
         output: a list of (action, probability) tuples for each available
         action and the score of the board state
         """
-        legal_positions = board.availables
-        current_state = np.ascontiguousarray(board.current_state().reshape(
+        legal_positions = board.getAvailablePositions1D()
+        current_state = np.ascontiguousarray(convertGameState(board).reshape(
                 -1, 4, self.board_width, self.board_height))
         if self.use_gpu:
             log_act_probs, value = self.policy_value_net(
@@ -140,9 +162,7 @@ class PolicyValueNet():
         loss.backward()
         self.optimizer.step()
         # calc policy entropy, for monitoring only
-        entropy = -torch.mean(
-                torch.sum(torch.exp(log_act_probs) * log_act_probs, 1)
-                )
+        entropy = -torch.mean(torch.sum(torch.exp(log_act_probs) * log_act_probs, 1))
         return loss.item(), entropy.item()
 
     def get_policy_param(self):
