@@ -7,15 +7,10 @@ network to guide the tree search and evaluate the leaf nodes
 
 import numpy as np
 import copy
+from scipy.special import softmax
 
 from PyGameConnectN import PyGameBoard
 from connect_n import ConnectNGame
-
-
-def softmax(x):
-    probs = np.exp(x - np.max(x))
-    probs /= np.sum(probs)
-    return probs
 
 
 class TreeNode(object):
