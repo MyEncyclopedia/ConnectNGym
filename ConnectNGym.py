@@ -6,7 +6,7 @@ import gym
 from gym import spaces
 
 from PyGameConnectN import PyGameBoard
-from connect_n import ConnectNGame
+from connect_n import ConnectNGame, Move1D
 
 REWARD_A = 1
 REWARD_B = -1
@@ -34,7 +34,7 @@ class ConnectNGym(gym.Env):
         self.pygameBoard.connectNGame.reset()
         return copy.deepcopy(self.pygameBoard.connectNGame)
 
-    def step(self, action: Tuple[int, int]) -> Tuple[ConnectNGame, int, bool, None]:
+    def step(self, action: Move1D) -> Tuple[ConnectNGame, int, bool, None]:
         """Run one timestep of the environment's dynamics. When end of
         episode is reached, you are responsible for calling `reset()`
         to reset this environment's state.

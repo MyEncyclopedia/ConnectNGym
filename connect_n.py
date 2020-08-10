@@ -1,5 +1,10 @@
 from typing import List, Tuple
 
+from typing import NewType
+
+GameStatus = NewType('GameStatus', Tuple[Tuple[int, ...]])
+Move2D = NewType('Move2D', Tuple[int, int])
+Move1D = NewType('Move1D', int)
 
 class ConnectNGame:
     PLAYER_A = 1
@@ -20,7 +25,7 @@ class ConnectNGame:
         self.remainingPosNum = self.board_size * self.board_size
         self.actionStack = []
 
-    def move1D(self, pos: int) -> int:
+    def move1D(self, pos: int) -> Move1D:
         r, c = pos // self.board_size, pos % self.board_size
         return self.move(r, c)
 
@@ -92,17 +97,17 @@ class ConnectNGame:
             i += 1
         return result
 
-    def getAvailablePositions(self) -> List[Tuple[int, int]]:
+    def getAvailablePositions(self) -> List[Move2D]:
         return [(i, j) for i in range(self.board_size) for j in range(self.board_size) if
                 self.board[i][j] == ConnectNGame.AVAILABLE]
 
-    def getAvailablePositions1D(self) -> List[int]:
+    def getAvailablePositions1D(self) -> List[Move1D]:
         return [i * self.board_size + j
                 for i in range(self.board_size)
                 for j in range(self.board_size)
                 if self.board[i][j] == ConnectNGame.AVAILABLE]
 
-    def getStatus(self) -> Tuple[Tuple[int, ...]]:
+    def getStatus(self) -> GameStatus:
         return tuple([tuple(self.board[i]) for i in range(self.board_size)])
 
     def checkAction(self, r: int, c: int) -> bool:

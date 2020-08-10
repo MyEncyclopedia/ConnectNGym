@@ -2,7 +2,7 @@ import sys
 from typing import List, Tuple
 import pygame
 from pygame.event import Event
-from connect_n import ConnectNGame
+from connect_n import ConnectNGame, Move2D, Move1D, GameStatus
 
 
 class PyGameBoard:
@@ -24,7 +24,7 @@ class PyGameBoard:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(pygame.font.get_default_font(), 20)
 
-    def next_user_input(self) -> Tuple[int, int]:
+    def next_user_input(self) -> Move2D:
         self.action = None
         while not self.action:
             self.check_event()
@@ -60,16 +60,16 @@ class PyGameBoard:
     def isGameOver(self) -> bool:
         return self.connectNGame.gameOver
 
-    def getAvailablePositions(self) -> List[Tuple[int, int]]:
+    def getAvailablePositions(self) -> List[Move2D]:
         return self.connectNGame.getAvailablePositions()
 
-    def getAvailablePositions1D(self) -> List[int]:
+    def getAvailablePositions1D(self) -> List[Move1D]:
         return self.connectNGame.getAvailablePositions1D()
 
     def getCurrentPlayer(self) -> int:
         return self.connectNGame.currentPlayer
 
-    def getStatus(self) -> Tuple[Tuple[int, ...]]:
+    def getStatus(self) -> GameStatus:
         return self.connectNGame.getStatus()
 
     def _render(self):
@@ -96,7 +96,7 @@ class PyGameBoard:
 
         pygame.display.update()
 
-    def _handle_user_input(self, e: Event) -> Tuple[int, int]:
+    def _handle_user_input(self, e: Event) -> Move2D:
         origin_x = self.start_x - self.edge_size
         origin_y = self.start_y - self.edge_size
         size = (self.board_size - 1) * self.grid_size + self.edge_size * 2

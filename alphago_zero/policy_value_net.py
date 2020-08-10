@@ -3,7 +3,7 @@
 An implementation of the policyValueNet in PyTorch
 
 """
-from typing import Tuple, List
+from typing import Tuple, List, Iterator
 
 import torch
 import torch.nn as nn
@@ -114,7 +114,7 @@ class PolicyValueNet():
             act_probs = np.exp(log_act_probs.data.numpy())
             return act_probs, value.data.numpy()
 
-    def policy_value_fn(self, board: ConnectNGame) -> Tuple[List[Tuple[int], np.ndarray], np.float]:
+    def policy_value_fn(self, board: ConnectNGame) -> Tuple[Iterator[Tuple[int, np.ndarray]], np.float]:
         """
         input: board
         output: a list of (action, probability) tuples for each available
@@ -132,7 +132,7 @@ class PolicyValueNet():
                     Variable(torch.from_numpy(current_state)).float())
             posProbs = np.exp(log_act_probs.data.numpy().flatten())
         value = value.data[0][0]
-        return list(zip(availPosList, posProbs)), value
+        return zip(availPosList, posProbs), value
 
     def train_step(self, state_batch, mcts_probs, winner_batch, lr):
         """perform a training step"""
