@@ -3,6 +3,7 @@
 An implementation of the policyValueNet in PyTorch
 
 """
+from typing import Tuple, List
 
 import torch
 import torch.nn as nn
@@ -113,26 +114,25 @@ class PolicyValueNet():
             act_probs = np.exp(log_act_probs.data.numpy())
             return act_probs, value.data.numpy()
 
-    def policy_value_fn(self, board: ConnectNGame):
+    def policy_value_fn(self, board: ConnectNGame) -> Tuple[List[Tuple[int], np.ndarray], np.float]:
         """
         input: board
         output: a list of (action, probability) tuples for each available
         action and the score of the board state
         """
-        legal_positions = board.getAvailablePositions1D()
+        availPosList = board.getAvailablePositions1D()
         current_state = np.ascontiguousarray(convertGameState(board).reshape(
                 -1, 4, self.board_width, self.board_height))
         if self.use_gpu:
             log_act_probs, value = self.policy_value_net(
                     Variable(torch.from_numpy(current_state)).cuda().float())
-            act_probs = np.exp(log_act_probs.data.cpu().numpy().flatten())
+            posProbs = np.exp(log_act_probs.data.cpu().numpy().flatten())
         else:
             log_act_probs, value = self.policy_value_net(
                     Variable(torch.from_numpy(current_state)).float())
-            act_probs = np.exp(log_act_probs.data.numpy().flatten())
-        act_probs = zip(legal_positions, act_probs[legal_positions])
+            posProbs = np.exp(log_act_probs.data.numpy().flatten())
         value = value.data[0][0]
-        return act_probs, value
+        return list(zip(availPosList, posProbs)), value
 
     def train_step(self, state_batch, mcts_probs, winner_batch, lr):
         """perform a training step"""

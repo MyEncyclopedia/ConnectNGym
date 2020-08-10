@@ -4,6 +4,7 @@ Monte Carlo Tree Search in AlphaGo Zero style, which uses a policy-value
 network to guide the tree search and evaluate the leaf nodes
 
 """
+from typing import List, Tuple
 
 import numpy as np
 import copy
@@ -28,12 +29,12 @@ class TreeNode(object):
         self._u = 0
         self._P = prior_p
 
-    def expand(self, action_priors):
+    def expand(self, actionWithProb: List[Tuple[int, np.ndarray]]):
         """Expand tree by creating new children.
         action_priors: a list of tuples of actions and their prior probability
             according to the policy function.
         """
-        for action, prob in action_priors:
+        for action, prob in actionWithProb:
             if action not in self._children:
                 self._children[action] = TreeNode(self, prob)
 

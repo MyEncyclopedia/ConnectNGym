@@ -1,6 +1,7 @@
 import argparse
 import random
 from collections import deque
+from typing import Tuple, List
 
 import torch
 
@@ -33,7 +34,16 @@ def get_equi_data(play_data: list):
                                 winner))
     return extend_data
 
-def start_self_play(player: MCTSPlayer, args, is_shown=0):
+def selfPlayRollout(player: MCTSPlayer, args, is_shown=0) -> Tuple[int, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
+    """
+
+    :param player:
+    :param args:
+    :param is_shown:
+    :return:
+        winner: int
+        List[]
+    """
     """ start a self-play game using a MCTS player, reuse the search tree,
     and store the self-play data: (state, mcts_probs, z) for training
     """
@@ -67,7 +77,7 @@ def start_self_play(player: MCTSPlayer, args, is_shown=0):
                     print("Game end. Winner is player:", winner)
                 else:
                     print("Game end. Tie")
-            return winner, zip(states, mcts_probs, winners_z)
+            return winner, list(zip(states, mcts_probs, winners_z))
 
 
 def train(args):
@@ -85,7 +95,7 @@ def train(args):
     def collect_selfplay_data(n_games=1):
         """collect self-play data for training"""
         for i in range(n_games):
-            winner, play_data = start_self_play(mcts_player, args)
+            winner, play_data = selfPlayRollout(mcts_player, args)
             play_data = list(play_data)[:]
             # augment the data
             play_data = get_equi_data(play_data)
