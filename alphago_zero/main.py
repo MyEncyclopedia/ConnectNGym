@@ -6,8 +6,8 @@ from typing import Tuple, List
 import torch
 
 from PyGameConnectN import PyGameBoard
-from alphago_zero.mcts_alphaZero import MCTSPlayer
-from alphago_zero.policy_value_net import PolicyValueNet, convertGameState
+from alphago_zero.MCTS import MCTSPlayer
+from alphago_zero.PolicyValueNetwork import PolicyValueNet, convertGameState
 from connect_n import ConnectNGame
 import numpy as np
 
@@ -87,7 +87,7 @@ def train(args):
     data_buffer = deque(maxlen=args.buffer_size)
 
     policy_value_net = PolicyValueNet(args.board_size, args.board_size)
-    mcts_player = MCTSPlayer(policy_value_net.policy_value_fn,
+    mcts_player = MCTSPlayer(policy_value_net,
                              c_puct=args.c_puct,
                              n_playout=args.n_playout,
                              is_selfplay=1)

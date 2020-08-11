@@ -75,8 +75,7 @@ class TreeNode(object):
         c_puct: a number in (0, inf) controlling the relative impact of
             value Q, and prior probability P, on this node's score.
         """
-        self._u = (c_puct * self._P *
-                   np.sqrt(self._parent._n_visits) / (1 + self._n_visits))
+        self._u = (c_puct * self._P * np.sqrt(self._parent._n_visits) / (1 + self._n_visits))
         return self._Q + self._u
 
     def isLeaf(self) -> bool:
@@ -92,7 +91,7 @@ class TreeNode(object):
 class MCTS(object):
     """An implementation of Monte Carlo Tree Search."""
 
-    def __init__(self, policy_value_fn, c_puct=5, n_playout=10000):
+    def __init__(self, policyValueNet, c_puct=5, n_playout=10000):
         """
         policy_value_fn: a function that takes in a board state and outputs
             a list of (action, probability) tuples and also a score in [-1, 1]
@@ -103,7 +102,7 @@ class MCTS(object):
             relying on the prior more.
         """
         self._root = TreeNode(None, 1.0)
-        self._policy = policy_value_fn
+        self._policyValueNet = policyValueNet
         self._c_puct = c_puct
         self._n_playout = n_playout
 
@@ -113,7 +112,7 @@ class MCTS(object):
         State is modified in-place, so a copy must be provided.
         """
         node = TreeNode.statusToNodeMap[game.getStatus()]
-        while(1):
+        while True:
             if node.isLeaf():
                 break
             # Greedily select next move.
@@ -123,7 +122,7 @@ class MCTS(object):
         # Evaluate the leaf using a network which outputs a list of
         # (action, probability) tuples p and also a score v in [-1, 1]
         # for the current player.
-        actionWithProbs, leafValue = self._policy(game)
+        actionWithProbs, leafValue = self._policyValueNet.policy_value_fn(game)
         # Check for end of game.
         end, winner = game.gameOver, game.gameResult
         if not end:
@@ -150,8 +149,7 @@ class MCTS(object):
             self._playout(state_copy)
 
         # calc the move probabilities based on visit counts at the root node
-        act_visits = [(act, node._n_visits)
-                      for act, node in self._root._children.items()]
+        act_visits = [(act, node._n_visits) for act, node in self._root._children.items()]
         acts, visits = zip(*act_visits)
         act_probs = softmax(1.0/temp * np.log(np.array(visits) + 1e-10))
 
@@ -164,8 +162,8 @@ class MCTS(object):
 class MCTSPlayer(object):
     """AI player based on MCTS"""
 
-    def __init__(self, policy_value_function, c_puct=5, n_playout=2000, is_selfplay=0):
-        self.mcts = MCTS(policy_value_function, c_puct, n_playout)
+    def __init__(self, policyValueNet, c_puct=5, n_playout=2000, is_selfplay=0):
+        self.mcts = MCTS(policyValueNet, c_puct, n_playout)
         self._is_selfplay = is_selfplay
 
     def set_player_ind(self, p):

@@ -14,6 +14,10 @@ import numpy as np
 
 from connect_n import ConnectNGame
 
+from typing import NewType
+
+MoveWithProb = NewType('MoveWithProb', Tuple[int, np.ndarray])
+
 def convertGameState(state: ConnectNGame) -> np.ndarray:
     """return the board state from the perspective of the current player.
     state shape: 4*width*height
@@ -80,8 +84,7 @@ class Net(nn.Module):
 
 class PolicyValueNet():
     """policy-value network """
-    def __init__(self, board_width, board_height,
-                 model_file=None, use_gpu=False):
+    def __init__(self, board_width, board_height, model_file=None, use_gpu=False):
         self.use_gpu = use_gpu
         self.board_width = board_width
         self.board_height = board_height
@@ -114,7 +117,7 @@ class PolicyValueNet():
             act_probs = np.exp(log_act_probs.data.numpy())
             return act_probs, value.data.numpy()
 
-    def policy_value_fn(self, board: ConnectNGame) -> Tuple[Iterator[Tuple[int, np.ndarray]], np.float]:
+    def policy_value_fn(self, board: ConnectNGame) -> Tuple[Iterator[MoveWithProb], np.float]:
         """
         input: board
         output: a list of (action, probability) tuples for each available
