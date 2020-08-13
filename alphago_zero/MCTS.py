@@ -29,13 +29,14 @@ class TreeNode(object):
         self._u = 0
         self._P = prior_p
 
-    def expand(self, action: int, prob: np.ndarray, status: GameStatus) -> TreeNode:
+    def expand(self, action: int, prob: np.ndarray) -> TreeNode:
         """Expand tree by creating new children.
         action_priors: a list of tuples of actions and their prior probability
             according to the policy function.
         """
         childNode = TreeNode(self, prob)
         self._children[action] = childNode
+        return childNode
 
     def select(self, c_puct) -> Tuple[int, TreeNode]:
         """Select action among children that gives maximum action value Q
@@ -118,7 +119,7 @@ class MCTS(object):
         if not end:
             for action, prob in actionWithProbs:
                 game.move1D(action)
-                childNode = node.expand(action, prob, game.getStatus())
+                childNode = node.expand(action, prob)
                 MCTS.statusToNodeMap[game.getStatus()] = childNode
                 game.undo()
 
