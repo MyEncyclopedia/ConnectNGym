@@ -4,16 +4,14 @@ Monte Carlo Tree Search in AlphaGo Zero style, which uses a policy-value
 network to guide the tree search and evaluate the leaf nodes
 
 """
-from typing import List, Tuple, Dict
 from __future__ import annotations
-
-
+from typing import List, Tuple, Dict, Iterator, ClassVar
 import numpy as np
 import copy
 from scipy.special import softmax
 
 from PyGameConnectN import PyGameBoard
-from connect_n import ConnectNGame, GameStatus
+from connect_n import ConnectNGame, GameStatus, Move1D
 
 
 class TreeNode(object):
@@ -23,24 +21,21 @@ class TreeNode(object):
     its visit-count-adjusted prior score u.
     """
 
-    statusToNodeMap: Dict[GameStatus, TreeNode] = {}   # gameStatus => TreeNode
-
-    def __init__(self, parent, prior_p):
-        self._parent = parent
+    def __init__(self, parentNode: TreeNode, prior_p: float):
+        self._parent = parentNode
         self._children: Dict[int, TreeNode] = {}  # a map from action to TreeNode
         self._n_visits = 0
         self._Q = 0
         self._u = 0
         self._P = prior_p
 
-    def expand(self, action: int, prob: np.ndarray, status: GameStatus):
+    def expand(self, action: int, prob: np.ndarray, status: GameStatus) -> TreeNode:
         """Expand tree by creating new children.
         action_priors: a list of tuples of actions and their prior probability
             according to the policy function.
         """
         childNode = TreeNode(self, prob)
         self._children[action] = childNode
-        TreeNode.statusToNodeMap[status] = childNode
 
     def select(self, c_puct) -> Tuple[int, TreeNode]:
         """Select action among children that gives maximum action value Q
@@ -82,14 +77,11 @@ class TreeNode(object):
         """Check if leaf node (i.e. no nodes below this have been expanded)."""
         return self._children == {}
 
-    @classmethod
-    def reset(cls):
-        TreeNode.statusToNodeMap = {}
-
 
 
 class MCTS(object):
     """An implementation of Monte Carlo Tree Search."""
+    statusToNodeMap: ClassVar[Dict[GameStatus, TreeNode]] = {}   # gameStatus => TreeNode
 
     def __init__(self, policyValueNet, c_puct=5, n_playout=10000):
         """
@@ -111,7 +103,7 @@ class MCTS(object):
         the leaf and propagating it back through its parents.
         State is modified in-place, so a copy must be provided.
         """
-        node = TreeNode.statusToNodeMap[game.getStatus()]
+        node = MCTS.statusToNodeMap[game.getStatus()]
         while True:
             if node.isLeaf():
                 break
@@ -127,8 +119,9 @@ class MCTS(object):
         end, winner = game.gameOver, game.gameResult
         if not end:
             for action, prob in actionWithProbs:
-                game.move()
-                node.expand(action, prob, game.getStatus())
+                game.move1D(action)
+                childNode = node.expand(action, prob, game.getStatus())
+                MCTS.statusToNodeMap[game.getStatus()] = childNode
                 game.undo()
 
         else:
@@ -138,7 +131,7 @@ class MCTS(object):
         # Update value and visit count of nodes in this traversal.
         node.updateToRoot(-leafValue)
 
-    def get_move_probs(self, state: ConnectNGame, temp=1e-3):
+    def simulate(self, state: ConnectNGame, temp=1e-3) -> Tuple[List[Move1D], np.ndarray]:
         """Run all playouts sequentially and return the available actions and
         their corresponding probabilities.
         state: the current game state
@@ -155,8 +148,11 @@ class MCTS(object):
 
         return acts, act_probs
 
-    def reset(self):
-        TreeNode.reset()
+    def reset(self, initialGame: ConnectNGame):
+        MCTS.statusToNodeMap = {}
+        self._root = TreeNode(None, 1.0)
+        MCTS.statusToNodeMap[initialGame.getStatus()] = self._root
+
 
 
 class MCTSPlayer(object):
@@ -169,15 +165,15 @@ class MCTSPlayer(object):
     def set_player_ind(self, p):
         self.player = p
 
-    def reset_player(self):
-        self.mcts.reset()
+    def reset_player(self, initialGame: ConnectNGame):
+        self.mcts.reset(initialGame)
 
     def get_action(self, board: PyGameBoard, temp=1e-3, return_prob=0):
         sensible_moves = board.getAvailablePositions1D()
         # the pi vector returned by MCTS as in the alphaGo Zero paper
         move_probs = np.zeros(board.board_size * board.board_size)
         if len(sensible_moves) > 0:
-            acts, probs = self.mcts.get_move_probs(board.connectNGame, temp)
+            acts, probs = self.mcts.simulate(board.connectNGame, temp)
             move_probs[list(acts)] = probs
             if self._is_selfplay:
                 # add Dirichlet Noise for exploration (needed for

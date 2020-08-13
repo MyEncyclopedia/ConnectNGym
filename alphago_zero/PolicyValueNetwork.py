@@ -14,9 +14,9 @@ import numpy as np
 
 from connect_n import ConnectNGame
 
-from typing import NewType
+# from typing import NewType
 
-MoveWithProb = NewType('MoveWithProb', Tuple[int, np.ndarray])
+MoveWithProb = Tuple[int, np.ndarray]
 
 def convertGameState(state: ConnectNGame) -> np.ndarray:
     """return the board state from the perspective of the current player.

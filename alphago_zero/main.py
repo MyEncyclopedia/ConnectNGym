@@ -49,6 +49,7 @@ def selfPlayRollout(player: MCTSPlayer, args, is_shown=0) -> Tuple[int, List[Tup
     """
     game = ConnectNGame(board_size=args.board_size, N=args.n_in_row)
     pygameBoard = PyGameBoard(connectNGame=game)
+    player.reset_player(game)
 
     states: list[np.ndarray] = []
     mcts_probs:list[np.ndarray] = []

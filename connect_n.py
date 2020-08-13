@@ -2,9 +2,9 @@ from typing import List, Tuple
 
 from typing import NewType
 
-GameStatus = NewType('GameStatus', Tuple[Tuple[int, ...]])
-Move2D = NewType('Move2D', Tuple[int, int])
-Move1D = NewType('Move1D', int)
+GameStatus = Tuple[Tuple[int, ...]]
+Move2D = Tuple[int, int]
+Move1D = int
 
 class ConnectNGame:
     PLAYER_A = 1
