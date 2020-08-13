@@ -172,18 +172,17 @@ class MCTSPlayer(object):
             acts, probs = self.mcts.simulate(board.connectNGame, temperature)
             moveProbs[list(acts)] = probs
             if self._isSelfplay:
-                # add Dirichlet Noise for exploration (needed for
-                # self-play training)
-                move = np.random.choice(
-                    acts,
-                    p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs)))
-                )
+                # add Dirichlet Noise for exploration (needed for self-play training)
+                while True:
+                    move = np.random.choice(acts, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
+                    if move in board.connectNGame.getAvailablePositions1D():
+                        break
             else:
                 # with the default temp=1e-3, it is almost equivalent
                 # to choosing the move with the highest prob
                 move = np.random.choice(acts, p=probs)
                 # reset the root node
-                self.mcts.reset(self._initialGame)
+                self.resetPlayer()
             #                location = board.move_to_location(move)
             #                print("AI move: %d,%d\n" % (location[0], location[1]))
 
