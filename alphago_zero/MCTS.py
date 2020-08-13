@@ -130,14 +130,14 @@ class MCTS(object):
         # Update value and visit count of nodes in this traversal.
         node.updateToRoot(-leafValue)
 
-    def simulate(self, state: ConnectNGame, temp=1e-3) -> Tuple[List[Move1D], np.ndarray]:
+    def simulate(self, game: ConnectNGame, temp=1e-3) -> Tuple[List[Move1D], np.ndarray]:
         """Run all playouts sequentially and return the available actions and
         their corresponding probabilities.
         state: the current game state
         temp: temperature parameter in (0, 1] controls the level of exploration
         """
         for n in range(self._n_playout):
-            state_copy = copy.deepcopy(state)
+            state_copy = copy.deepcopy(game)
             self._playout(state_copy)
 
         # calc the move probabilities based on visit counts at the root node
@@ -156,7 +156,7 @@ class MCTS(object):
 class MCTSPlayer(object):
     """AI player based on MCTS"""
 
-    def __init__(self, policyValueNet, initialGame: ConnectNGame, c_puct=5, n_playout=2000, isSelfplay=0):
+    def __init__(self, policyValueNet, initialGame: ConnectNGame, c_puct=5, n_playout=2000, isSelfplay=False):
         self._initialGame = initialGame
         self.mcts = MCTS(policyValueNet, c_puct, n_playout)
         self._isSelfplay = isSelfplay
