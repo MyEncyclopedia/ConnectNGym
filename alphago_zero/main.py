@@ -1,4 +1,5 @@
 import argparse
+import copy
 import random
 from collections import deque
 from typing import Tuple, List
@@ -12,7 +13,7 @@ from connect_n import ConnectNGame
 import numpy as np
 
 
-def get_equi_data(play_data: list):
+def getRotatedStatus(play_data: list):
     """augment the data set by rotation and flipping
     play_data: [(state, mcts_prob, winner_z), ..., ...]
     """
@@ -34,7 +35,9 @@ def get_equi_data(play_data: list):
                                 winner))
     return extend_data
 
-def selfPlayRollout(player: MCTSPlayer, args, is_shown=0) -> Tuple[int, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
+
+def selfPlayRollout(player: MCTSPlayer, pygameBoard: PyGameBoard, temperature, is_shown=0) \
+        -> Tuple[int, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
     """
 
     :param player:
@@ -47,15 +50,12 @@ def selfPlayRollout(player: MCTSPlayer, args, is_shown=0) -> Tuple[int, List[Tup
     """ start a self-play game using a MCTS player, reuse the search tree,
     and store the self-play data: (state, mcts_probs, z) for training
     """
-    game = ConnectNGame(board_size=args.board_size, N=args.n_in_row)
-    pygameBoard = PyGameBoard(connectNGame=game)
-    player.resetPlayer(game)
 
     states: list[np.ndarray] = []
-    mcts_probs:list[np.ndarray] = []
+    mcts_probs: list[np.ndarray] = []
     current_players: list[int] = []
     while True:
-        move, moveProbs = player.simulateReturnAction(pygameBoard, temp=args.temp, returnProb=1)
+        move, moveProbs = player.simulateReturnAction(pygameBoard, temperature=temperature)
         # store the data
         states.append(convertGameState(pygameBoard.connectNGame))
         mcts_probs.append(moveProbs)
@@ -81,86 +81,78 @@ def selfPlayRollout(player: MCTSPlayer, args, is_shown=0) -> Tuple[int, List[Tup
             return winner, list(zip(states, mcts_probs, winners_z))
 
 
+def policy_update(mini_batch, policy_value_net, args):
+    """update the policy-value net"""
+    state_batch = [data[0] for data in mini_batch]
+    mcts_probs_batch = [data[1] for data in mini_batch]
+    winner_batch = [data[2] for data in mini_batch]
+    old_probs, old_v = policy_value_net.policy_value(state_batch)
+    for i in range(args.epochs):
+        loss, entropy = policy_value_net.train_step(
+            state_batch,
+            mcts_probs_batch,
+            winner_batch,
+            args.learning_rate * args.lr_multiplier)
+        new_probs, new_v = policy_value_net.policy_value(state_batch)
+        kl = np.mean(np.sum(old_probs * (
+                np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)),
+                            axis=1)
+                     )
+        if kl > args.kl_targ * 4:  # early stopping if D_KL diverges badly
+            break
+    # adaptively adjust the learning rate
+    if kl > args.kl_targ * 2 and args.lr_multiplier > 0.1:
+        args.lr_multiplier /= 1.5
+    elif kl < args.kl_targ / 2 and args.lr_multiplier < 10:
+        args.lr_multiplier *= 1.5
+
+    explained_var_old = (1 - np.var(np.array(winner_batch) - old_v.flatten()) / np.var(np.array(winner_batch)))
+    explained_var_new = (1 - np.var(np.array(winner_batch) - new_v.flatten()) / np.var(np.array(winner_batch)))
+    print(("kl:{:.5f},"
+           "lr_multiplier:{:.3f},"
+           "loss:{},"
+           "entropy:{},"
+           "explained_var_old:{:.3f},"
+           "explained_var_new:{:.3f}"
+           ).format(kl,
+                    args.lr_multiplier,
+                    loss,
+                    entropy,
+                    explained_var_old,
+                    explained_var_new))
+    return loss, entropy
+
+
 def train(args):
-    game = ConnectNGame(board_size=args.board_size, N=args.n_in_row)
-    pygameBoard = PyGameBoard(connectNGame=game)
+    initialGame = ConnectNGame(board_size=args.board_size, N=args.n_in_row)
+    # pygameBoard = PyGameBoard(connectNGame=game)
 
     data_buffer = deque(maxlen=args.buffer_size)
 
     policy_value_net = PolicyValueNet(args.board_size, args.board_size)
-    mcts_player = MCTSPlayer(policy_value_net,
-                             ConnectNGame(board_size=args.board_size, N=args.n_in_row),
-                             c_puct=args.c_puct,
-                             n_playout=args.n_playout,
-                             is_selfplay=1)
-
-    def collect_selfplay_data(n_games=1):
-        """collect self-play data for training"""
-        for i in range(n_games):
-            winner, play_data = selfPlayRollout(mcts_player, args)
-            play_data = list(play_data)[:]
-            # augment the data
-            play_data = get_equi_data(play_data)
-            data_buffer.extend(play_data)
-            episode_len = len(play_data)
-            return episode_len
-
-    def policy_update():
-        """update the policy-value net"""
-        mini_batch = random.sample(data_buffer, args.batch_size)
-        state_batch = [data[0] for data in mini_batch]
-        mcts_probs_batch = [data[1] for data in mini_batch]
-        winner_batch = [data[2] for data in mini_batch]
-        old_probs, old_v = policy_value_net.policy_value(state_batch)
-        for i in range(args.epochs):
-            loss, entropy = policy_value_net.train_step(
-                state_batch,
-                mcts_probs_batch,
-                winner_batch,
-                args.learning_rate * args.lr_multiplier)
-            new_probs, new_v = policy_value_net.policy_value(state_batch)
-            kl = np.mean(np.sum(old_probs * (
-                    np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)),
-                                axis=1)
-                         )
-            if kl > args.kl_targ * 4:  # early stopping if D_KL diverges badly
-                break
-        # adaptively adjust the learning rate
-        if kl > args.kl_targ * 2 and args.lr_multiplier > 0.1:
-            args.lr_multiplier /= 1.5
-        elif kl < args.kl_targ / 2 and args.lr_multiplier < 10:
-            args.lr_multiplier *= 1.5
-
-        explained_var_old = (1 -
-                             np.var(np.array(winner_batch) - old_v.flatten()) /
-                             np.var(np.array(winner_batch)))
-        explained_var_new = (1 -
-                             np.var(np.array(winner_batch) - new_v.flatten()) /
-                             np.var(np.array(winner_batch)))
-        print(("kl:{:.5f},"
-               "lr_multiplier:{:.3f},"
-               "loss:{},"
-               "entropy:{},"
-               "explained_var_old:{:.3f},"
-               "explained_var_new:{:.3f}"
-               ).format(kl,
-                        args.lr_multiplier,
-                        loss,
-                        entropy,
-                        explained_var_old,
-                        explained_var_new))
-        return loss, entropy
+    mctsPlayer = MCTSPlayer(policy_value_net, copy.deepcopy(initialGame), c_puct=args.c_puct, n_playout=args.n_playout,
+                            isSelfplay=1)
 
     try:
         for i in range(args.game_batch_num):
-            episode_len = collect_selfplay_data(args.play_batch_size)
-            print(f'batch i:{i + 1}, episode_len:{episode_len}')
-            if len(data_buffer) > args.batch_size:
-                loss, entropy = policy_update()
-            # check the performance of the current model,
-            # and save the model params
-            if (i + 1) % args.check_freq == 0:
-                pass
+            mctsPlayer.resetPlayer()
+            for b in range(args.play_batch_size):
+                game = copy.deepcopy(initialGame)
+                pygameBoard = PyGameBoard(connectNGame=game)
+                winner, play_data = selfPlayRollout(mctsPlayer, pygameBoard, args.temperature)
+                play_data = list(play_data)[:]
+                # augment the data
+                play_data = getRotatedStatus(play_data)
+                data_buffer.extend(play_data)
+                episode_len = len(play_data)
+                print(f'batch i:{i + 1}, episode_len:{episode_len}')
+                if len(data_buffer) > args.batch_size:
+                    mini_batch = random.sample(data_buffer, args.batch_size)
+                    loss, entropy = policy_update(mini_batch, policy_value_net, args)
+                # check the performance of the current model,
+                # and save the model params
+                if (i + 1) % args.check_freq == 0:
+                    pass
                 # print("current self-play batch: {}".format(i + 1))
                 # win_ratio = self.policy_evaluate()
                 # self.policy_value_net.save_model('./current_policy.model')
@@ -187,7 +179,7 @@ if __name__ == "__main__":
     # training params
     parser.add_argument("--learning_rate", type=float, default=2e-3)
     parser.add_argument("--lr_multiplier", type=float, default=1.0)  # adaptively adjust the learning rate based on KL
-    parser.add_argument("--temp", type=float, default=1.0)  # the temperature param
+    parser.add_argument("--temperature", type=float, default=1.0)  # the temperature param
     parser.add_argument("--n_playout", type=int, default=400)  # num of simulations for each move
     parser.add_argument("--c_puct", type=int, default=5)
     parser.add_argument("--buffer_size", type=int, default=10000)

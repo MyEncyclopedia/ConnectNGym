@@ -42,7 +42,7 @@ class TreeNode(object):
         plus bonus u(P).
         Return: A tuple of (action, next_node)
         """
-        return max(self._children.items(), key=lambda act_node: act_node[1].nodeUCB(c_puct))
+        return max(self._children.items(), key=lambda act_node: act_node[1].getNodeUCB(c_puct))
 
     def update(self, leaf_value):
         """Update node values from leaf evaluation.
@@ -62,7 +62,7 @@ class TreeNode(object):
             self._parent.updateToRoot(-leaf_value)
         self.update(leaf_value)
 
-    def nodeUCB(self, c_puct) -> float:
+    def getNodeUCB(self, c_puct) -> float:
         """Calculate and return the value for this node.
         It is a combination of leaf evaluations Q, and this node's prior
         adjusted for its visit count, u.
@@ -155,20 +155,20 @@ class MCTS(object):
 class MCTSPlayer(object):
     """AI player based on MCTS"""
 
-    def __init__(self, policyValueNet, initialGame: ConnectNGame, c_puct=5, n_playout=2000, is_selfplay=0):
+    def __init__(self, policyValueNet, initialGame: ConnectNGame, c_puct=5, n_playout=2000, isSelfplay=0):
         self._initialGame = initialGame
         self.mcts = MCTS(policyValueNet, c_puct, n_playout)
-        self._isSelfplay = is_selfplay
+        self._isSelfplay = isSelfplay
 
     def resetPlayer(self):
         self.mcts.reset(self._initialGame)
 
-    def simulateReturnAction(self, board: PyGameBoard, temp=1e-3) -> Tuple[Move1D, np.ndarray]:
+    def simulateReturnAction(self, board: PyGameBoard, temperature=1e-3) -> Tuple[Move1D, np.ndarray]:
         availableActions = board.getAvailablePositions1D()
         # the pi vector returned by MCTS as in the alphaGo Zero paper
         moveProbs = np.zeros(board.board_size * board.board_size)
         if len(availableActions) > 0:
-            acts, probs = self.mcts.simulate(board.connectNGame, temp)
+            acts, probs = self.mcts.simulate(board.connectNGame, temperature)
             moveProbs[list(acts)] = probs
             if self._isSelfplay:
                 # add Dirichlet Noise for exploration (needed for
