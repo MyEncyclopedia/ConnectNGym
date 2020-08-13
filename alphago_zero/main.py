@@ -49,16 +49,16 @@ def selfPlayRollout(player: MCTSPlayer, args, is_shown=0) -> Tuple[int, List[Tup
     """
     game = ConnectNGame(board_size=args.board_size, N=args.n_in_row)
     pygameBoard = PyGameBoard(connectNGame=game)
-    player.reset_player(game)
+    player.resetPlayer(game)
 
     states: list[np.ndarray] = []
     mcts_probs:list[np.ndarray] = []
     current_players: list[int] = []
     while True:
-        move, move_probs = player.get_action(pygameBoard, temp=args.temp, return_prob=1)
+        move, moveProbs = player.simulateReturnAction(pygameBoard, temp=args.temp, returnProb=1)
         # store the data
         states.append(convertGameState(pygameBoard.connectNGame))
-        mcts_probs.append(move_probs)
+        mcts_probs.append(moveProbs)
         current_players.append(pygameBoard.getCurrentPlayer())
         # perform a move
         pygameBoard.move1D(move)
@@ -72,7 +72,7 @@ def selfPlayRollout(player: MCTSPlayer, args, is_shown=0) -> Tuple[int, List[Tup
                 winners_z[np.array(current_players) == winner] = 1.0
                 winners_z[np.array(current_players) != winner] = -1.0
             # reset MCTS root node
-            player.reset_player()
+            player.resetPlayer()
             if is_shown:
                 if winner != -1:
                     print("Game end. Winner is player:", winner)
@@ -89,6 +89,7 @@ def train(args):
 
     policy_value_net = PolicyValueNet(args.board_size, args.board_size)
     mcts_player = MCTSPlayer(policy_value_net,
+                             ConnectNGame(board_size=args.board_size, N=args.n_in_row),
                              c_puct=args.c_puct,
                              n_playout=args.n_playout,
                              is_selfplay=1)
