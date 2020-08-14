@@ -122,7 +122,7 @@ class PolicyValueNet:
         output: a list of (action, probability) tuples for each available
         action and the score of the board state
         """
-        availPosList = board.get_avail_pos()
+        avail_pos_list = board.get_avail_pos()
         current_state = np.ascontiguousarray(convert_game_state(board).reshape(
                 -1, 4, self.board_width, self.board_height))
         if self.use_gpu:
@@ -134,7 +134,7 @@ class PolicyValueNet:
                     Variable(torch.from_numpy(current_state)).float())
             posProbs = np.exp(log_act_probs.data.numpy().flatten())
         value = value.data[0][0]
-        return zip(availPosList, posProbs), value
+        return zip(avail_pos_list, posProbs), value
 
     def train_step(self, state_batch, mcts_probs, winner_batch, lr):
         """perform a training step"""

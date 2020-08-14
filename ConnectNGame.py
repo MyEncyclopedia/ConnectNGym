@@ -55,15 +55,15 @@ class ConnectNGame:
 
     def undo(self):
         if len(self.action_stack) > 0:
-            lastAction = self.action_stack.pop()
-            r, c = lastAction
+            last_action = self.action_stack.pop()
+            r, c = last_action
             self.board[r][c] = ConnectNGame.AVAILABLE
             self.current_player = ConnectNGame.PLAYER_A if len(self.action_stack) % 2 == 0 else ConnectNGame.PLAYER_B
             self.remaining_pos_num += 1
             self.game_over = False
             self.game_result = None
         else:
-            raise Exception('No lastAction')
+            raise Exception('No last_action')
 
     def check_win(self, r: int, c: int) -> bool:
         north = self.get_connected_num(r, c, -1, 0)

@@ -41,13 +41,13 @@ def play_human_vs_human(env: ConnectNGym):
 
 
 def play_human_vs_ai(env: ConnectNGym):
-    plannedMinimaxAgent = AIAgent(PlannedMinimaxStrategy(env.pygameBoard.connectNGame))
-    play(env, HumanAgent(), plannedMinimaxAgent)
+    planned_minimax_agent = AIAgent(PlannedMinimaxStrategy(env.pygameBoard.connectNGame))
+    play(env, HumanAgent(), planned_minimax_agent)
 
 
 def play_ai_vs_ai(env: ConnectNGym):
-    plannedMinimaxAgent = AIAgent(PlannedMinimaxStrategy(env.pygameBoard.connectNGame))
-    play(env, plannedMinimaxAgent, plannedMinimaxAgent)
+    planned_minimax_agent = AIAgent(PlannedMinimaxStrategy(env.pygameBoard.connectNGame))
+    play(env, planned_minimax_agent, planned_minimax_agent)
 
 
 def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent, render=True) -> int:
@@ -59,7 +59,7 @@ def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent, render=True) ->
     while not done:
         agent_id = (agent_id + 1) % 2
         agent = agents[agent_id]
-        action = agent.get_action(pygameBoard)
+        action = agent.get_action(board)
         _, reward, done, info = env.step(action)
         env.render(render)
 
@@ -69,8 +69,8 @@ def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent, render=True) ->
 
 
 if __name__ == '__main__':
-    pygameBoard = PyGameBoard(connect_n_game=ConnectNGame(board_size=3, n=3))
-    env = ConnectNGym(pygameBoard)
+    board = PyGameBoard(connect_n_game=ConnectNGame(board_size=3, n=3))
+    env = ConnectNGym(board)
     env.render(True)
 
     play_ai_vs_ai(env)

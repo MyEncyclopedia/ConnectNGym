@@ -145,9 +145,9 @@ class PyGameBoard:
 
 if __name__ == '__main__':
     connectNGame = ConnectNGame()
-    pygameBoard = PyGameBoard(connectNGame)
-    while not pygameBoard.is_game_over():
-        pos = pygameBoard.next_user_input()
-        pygameBoard.move_2d(*pos)
+    board = PyGameBoard(connectNGame)
+    while not board.is_game_over():
+        pos = board.next_user_input()
+        board.move_2d(*pos)
 
     pygame.quit()
