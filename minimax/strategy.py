@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from functools import lru_cache
 from typing import Tuple
 
-from ConnectNGame import ConnectNGame, Move2D, GameStatus, GameAbsoluteResult, Pos
+from ConnectNGame import ConnectNGame, GameStatus, GameAbsoluteResult, Pos
 
 
 class Strategy(ABC):
@@ -66,7 +66,7 @@ class MinimaxDPStrategy(Strategy):
         return result, move
 
     @lru_cache(maxsize=None)
-    def minimax_dp(self, game_state: GameStatus) -> Tuple[GameAbsoluteResult, Move2D]:
+    def minimax_dp(self, game_state: GameStatus) -> Tuple[GameAbsoluteResult, Pos]:
         game = self.game
         best_move = None
         assert not game.game_over

@@ -2,7 +2,7 @@ import copy
 import math
 from typing import Tuple
 
-from ConnectNGame import ConnectNGame, Move2D, GameAbsoluteResult, GameStatus, Pos
+from ConnectNGame import ConnectNGame, GameAbsoluteResult, GameStatus, Pos
 from minimax.strategy import Strategy
 
 
@@ -13,7 +13,7 @@ class CountingMinimaxStrategy(Strategy):
         result, move = self.minimax(game.get_status())
         return result, move
 
-    def minimax(self, game_status: GameStatus) -> Tuple[GameAbsoluteResult, Move2D]:
+    def minimax(self, game_status: GameStatus) -> Tuple[GameAbsoluteResult, Pos]:
         # print(f'Current {len(strategy.dpMap)}')
 
         if game_status in self.dp_map:
