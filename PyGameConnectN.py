@@ -2,7 +2,7 @@ import sys
 from typing import List, Tuple
 import pygame
 from pygame.event import Event
-from connect_n import ConnectNGame, Move2D, Move1D, GameStatus
+from connect_n import ConnectNGame, Move2D, Pos, GameStatus
 
 
 class PyGameBoard:
@@ -50,27 +50,27 @@ class PyGameBoard:
             tick_num -= passed
 
     # proxy methods
-    def move1D(self, pos: int) -> int:
+    def move(self, pos: int) -> int:
         r, c = pos // self.board_size, pos % self.board_size
-        return self.connectNGame.move(r, c)
+        return self.connectNGame.move_2d(r, c)
 
-    def move2D(self, r: int, c: int) -> int:
-        return self.connectNGame.move(r, c)
+    def move_2d(self, r: int, c: int) -> int:
+        return self.connectNGame.move_2d(r, c)
 
-    def isGameOver(self) -> bool:
+    def is_game_over(self) -> bool:
         return self.connectNGame.gameOver
 
-    def getAvailablePositions2D(self) -> List[Move2D]:
-        return self.connectNGame.getAvailablePositions2D()
+    def get_avail_positions_2d(self) -> List[Move2D]:
+        return self.connectNGame.get_avail_pos_2d()
 
-    def getAvailablePositions1D(self) -> List[Move1D]:
-        return self.connectNGame.getAvailablePositions1D()
+    def get_avail_pos(self) -> List[Pos]:
+        return self.connectNGame.get_avail_pos()
 
-    def getCurrentPlayer(self) -> int:
+    def get_current_player(self) -> int:
         return self.connectNGame.currentPlayer
 
-    def getStatus(self) -> GameStatus:
-        return self.connectNGame.getStatus()
+    def get_status(self) -> GameStatus:
+        return self.connectNGame.get_status()
 
     def _render(self):
         self.screen.fill((255, 255, 255))
@@ -107,7 +107,7 @@ class PyGameBoard:
                 y = pos[1] - origin_y
                 r = int(y // self.grid_size)
                 c = int(x // self.grid_size)
-                valid = self.connectNGame.checkAction(r, c)
+                valid = self.connectNGame.check_action(r, c)
                 if valid:
                     self.action = (r, c)
                     return self.action
@@ -146,8 +146,8 @@ class PyGameBoard:
 if __name__ == '__main__':
     connectNGame = ConnectNGame()
     pygameBoard = PyGameBoard(connectNGame)
-    while not pygameBoard.isGameOver():
+    while not pygameBoard.is_game_over():
         pos = pygameBoard.next_user_input()
-        pygameBoard.move2D(*pos)
+        pygameBoard.move_2d(*pos)
 
     pygame.quit()

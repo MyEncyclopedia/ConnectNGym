@@ -31,9 +31,9 @@ class MinimaxStrategy(Strategy):
         assert not game.gameOver
         if game.currentPlayer == ConnectNGame.PLAYER_A:
             ret = -math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
                 if result is None:
                     assert not game.gameOver
                     result, oppMove = self.minimax()
@@ -45,9 +45,9 @@ class MinimaxStrategy(Strategy):
             return ret, bestMove
         else:
             ret = math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
                 if result is None:
                     assert not game.gameOver
                     result, oppMove = self.minimax()
@@ -62,7 +62,7 @@ class MinimaxStrategy(Strategy):
 class MinimaxDPStrategy(Strategy):
     def action(self, game) -> Tuple[int, Move2D]:
         self.game = game
-        result, move = self.minimax_dp(self.game.getStatus())
+        result, move = self.minimax_dp(self.game.get_status())
         return result, move
 
     @lru_cache(maxsize=None)
@@ -72,12 +72,12 @@ class MinimaxDPStrategy(Strategy):
         assert not game.gameOver
         if game.currentPlayer == ConnectNGame.PLAYER_A:
             ret = -math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
                 if result is None:
                     assert not game.gameOver
-                    result, oppMove = self.minimax_dp(game.getStatus())
+                    result, oppMove = self.minimax_dp(game.get_status())
                 game.undo()
                 ret = max(ret, result)
                 bestMove = move if ret == result else bestMove
@@ -86,12 +86,12 @@ class MinimaxDPStrategy(Strategy):
             return ret, bestMove
         else:
             ret = math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
                 if result is None:
                     assert not game.gameOver
-                    result, oppMove = self.minimax_dp(game.getStatus())
+                    result, oppMove = self.minimax_dp(game.get_status())
                 game.undo()
                 ret = min(ret, result)
                 bestMove = move if ret == result else bestMove
@@ -103,7 +103,7 @@ class MinimaxDPStrategy(Strategy):
 class AlphaBetaStrategy(Strategy):
     def action(self, game: ConnectNGame) -> Tuple[int, Move2D]:
         self.game = game
-        result, move = self.alpha_beta(self.game.getStatus(), -math.inf, math.inf)
+        result, move = self.alpha_beta(self.game.get_status(), -math.inf, math.inf)
         return result, move
 
     def alpha_beta(self, gameStatus: Tuple[Tuple[int, ...]], alpha: int = None, beta: int = None) \
@@ -113,12 +113,12 @@ class AlphaBetaStrategy(Strategy):
         assert not game.gameOver
         if game.currentPlayer == ConnectNGame.PLAYER_A:
             ret = -math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
                 if result is None:
                     assert not game.gameOver
-                    result, oppMove = self.alpha_beta(game.getStatus(), alpha, beta)
+                    result, oppMove = self.alpha_beta(game.get_status(), alpha, beta)
                 game.undo()
                 alpha = max(alpha, result)
                 ret = max(ret, result)
@@ -128,12 +128,12 @@ class AlphaBetaStrategy(Strategy):
             return ret, bestMove
         else:
             ret = math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
                 if result is None:
                     assert not game.gameOver
-                    result, oppMove = self.alpha_beta(game.getStatus(), alpha, beta)
+                    result, oppMove = self.alpha_beta(game.get_status(), alpha, beta)
                 game.undo()
                 beta = min(beta, result)
                 ret = min(ret, result)
@@ -147,7 +147,7 @@ class AlphaBetaDPStrategy(Strategy):
     def action(self, game: ConnectNGame) -> Tuple[int, Move2D]:
         self.game = game
         self.alphaBetaStack = [(-math.inf, math.inf)]
-        result, move = self.alpha_beta_dp(self.game.getStatus())
+        result, move = self.alpha_beta_dp(self.game.get_status())
         return result, move
 
     @lru_cache(maxsize=None)
@@ -158,13 +158,13 @@ class AlphaBetaDPStrategy(Strategy):
         assert not game.gameOver
         if game.currentPlayer == ConnectNGame.PLAYER_A:
             ret = -math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
                 if result is None:
                     assert not game.gameOver
                     self.alphaBetaStack.append((alpha, beta))
-                    result, oppMove = self.alpha_beta_dp(game.getStatus())
+                    result, oppMove = self.alpha_beta_dp(game.get_status())
                     self.alphaBetaStack.pop()
                 game.undo()
                 alpha = max(alpha, result)
@@ -175,13 +175,13 @@ class AlphaBetaDPStrategy(Strategy):
             return ret, bestMove
         else:
             ret = math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
                 if result is None:
                     assert not game.gameOver
                     self.alphaBetaStack.append((alpha, beta))
-                    result, oppMove = self.alpha_beta_dp(game.getStatus())
+                    result, oppMove = self.alpha_beta_dp(game.get_status())
                     self.alphaBetaStack.pop()
                 game.undo()
                 beta = min(beta, result)
@@ -214,6 +214,6 @@ if __name__ == '__main__':
         strategy = MinimaxStrategy(tic_tac_toe)
         r, action = strategy.action()
         # print(f'{tic_tac_toe.getStatus()} [{r}] : {action}')
-        tic_tac_toe.move2D(action[0], action[1])
-        tic_tac_toe.drawText()
+        tic_tac_toe.move_2d(action[0], action[1])
+        tic_tac_toe.draw_text()
         # print('------------------------------------------------------------')

@@ -11,7 +11,7 @@ class PlannedMinimaxStrategy(Strategy):
         super().__init__()
         self.game = copy.deepcopy(game)
         self.dpMap = {}  # game_status => result, move
-        self.result = self.minimax(game.getStatus())
+        self.result = self.minimax(game.get_status())
         print(f'best result: {self.result}')
 
     def action(self, game: ConnectNGame) -> Tuple[int, Tuple[int, int]]:
@@ -20,9 +20,9 @@ class PlannedMinimaxStrategy(Strategy):
         player = game.currentPlayer
         bestResult = player * -1  # assume opponent win as worst result
         bestMove = None
-        for move in game.getAvailablePositions2D():
-            game.move(*move)
-            status = game.getStatus()
+        for move in game.get_avail_pos_2d():
+            game.move_2d(*move)
+            status = game.get_status()
             game.undo()
 
             result = self.dpMap[status]
@@ -41,7 +41,7 @@ class PlannedMinimaxStrategy(Strategy):
         return bestResult, bestMove
 
     def minimax(self, gameStatus: Tuple[Tuple[int, ...]]) -> Tuple[int, Tuple[int, int]]:
-        similarStates = self.similarStatus(self.game.getStatus())
+        similarStates = self.similarStatus(self.game.get_status())
         for s in similarStates:
             if s in self.dpMap:
                 return self.dpMap[s]
@@ -50,19 +50,19 @@ class PlannedMinimaxStrategy(Strategy):
         game = self.game
         bestMove = None
         assert not game.gameOver
-        thisState = game.getStatus()
+        thisState = game.get_status()
 
         if game.currentPlayer == ConnectNGame.PLAYER_A:
             ret = -math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
                 if result is None:
                     assert not game.gameOver
-                    result = self.minimax(game.getStatus())
-                    self._updateDP(game.getStatus(), result)
+                    result = self.minimax(game.get_status())
+                    self._updateDP(game.get_status(), result)
                 else:
-                    self._updateDP(game.getStatus(), result)
+                    self._updateDP(game.get_status(), result)
                 game.undo()
                 ret = max(ret, result)
                 bestMove = move if ret == result else bestMove
@@ -70,15 +70,15 @@ class PlannedMinimaxStrategy(Strategy):
             return ret
         else:
             ret = math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
                 if result is None:
                     assert not game.gameOver
-                    result = self.minimax(game.getStatus())
-                    self._updateDP(game.getStatus(), result)
+                    result = self.minimax(game.get_status())
+                    self._updateDP(game.get_status(), result)
                 else:
-                    self._updateDP(game.getStatus(), result)
+                    self._updateDP(game.get_status(), result)
                 game.undo()
                 ret = min(ret, result)
                 bestMove = move if ret == result else bestMove

@@ -10,7 +10,7 @@ class CountingMinimaxStrategy(Strategy):
     def action(self, game: ConnectNGame) -> Tuple[int, Tuple[int, int]]:
         self.game = copy.deepcopy(game)
         self.dpMap = {}
-        result, move = self.minimax(game.getStatus())
+        result, move = self.minimax(game.get_status())
         return result, move
 
     def minimax(self, gameStatus: Tuple[Tuple[int, ...]]) -> Tuple[int, Tuple[int, int]]:
@@ -24,15 +24,15 @@ class CountingMinimaxStrategy(Strategy):
         assert not game.gameOver
         if game.currentPlayer == ConnectNGame.PLAYER_A:
             ret = -math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
                 if result is None:
                     assert not game.gameOver
-                    result, oppMove = self.minimax(game.getStatus())
-                    self.dpMap[game.getStatus()] = result, oppMove
+                    result, oppMove = self.minimax(game.get_status())
+                    self.dpMap[game.get_status()] = result, oppMove
                 else:
-                    self.dpMap[game.getStatus()] = result, move
+                    self.dpMap[game.get_status()] = result, move
                 game.undo()
                 ret = max(ret, result)
                 bestMove = move if ret == result else bestMove
@@ -40,16 +40,16 @@ class CountingMinimaxStrategy(Strategy):
             return ret, bestMove
         else:
             ret = math.inf
-            for pos in game.getAvailablePositions2D():
+            for pos in game.get_avail_pos_2d():
                 move = pos
-                result = game.move(*pos)
+                result = game.move_2d(*pos)
 
                 if result is None:
                     assert not game.gameOver
-                    result, oppMove = self.minimax(game.getStatus())
-                    self.dpMap[game.getStatus()] = result, oppMove
+                    result, oppMove = self.minimax(game.get_status())
+                    self.dpMap[game.get_status()] = result, oppMove
                 else:
-                    self.dpMap[game.getStatus()] = result, move
+                    self.dpMap[game.get_status()] = result, move
                 game.undo()
                 ret = min(ret, result)
                 bestMove = move if ret == result else bestMove

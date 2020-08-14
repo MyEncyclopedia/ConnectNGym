@@ -82,13 +82,13 @@ def selfPlayOneGame(player: MCTS_AlphaGoZero, pygameBoard: PyGameBoard, temperat
     mctsProbs: list[np.ndarray] = []
     currentPlayers: list[int] = []
     while True:
-        move, moveProbs = player.trainGetNextAction(pygameBoard, temperature=temperature)
+        move, moveProbs = player.train_get_next_action(pygameBoard, temperature=temperature)
         # store the data
         states.append(convertGameState(pygameBoard.connectNGame))
         mctsProbs.append(moveProbs)
-        currentPlayers.append(pygameBoard.getCurrentPlayer())
+        currentPlayers.append(pygameBoard.get_current_player())
         # perform a move
-        pygameBoard.move1D(move)
+        pygameBoard.move(move)
         if showGUI:
             pygameBoard.display()
         end, winner = pygameBoard.connectNGame.gameOver, pygameBoard.connectNGame.gameResult

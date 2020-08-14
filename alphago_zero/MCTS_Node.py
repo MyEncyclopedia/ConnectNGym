@@ -36,7 +36,7 @@ class TreeNode:
         plus bonus u(P).
         Return: A tuple of (action, next_node)
         """
-        return max(self._children.items(), key=lambda act_node: act_node[1].getNodeUCB(cPuct))
+        return max(self._children.items(), key=lambda act_node: act_node[1].get_node_ucb(cPuct))
 
     def update(self, leafValue):
         """Update node values from leaf evaluation.
@@ -48,15 +48,15 @@ class TreeNode:
         # Update Q, a running average of values for all visits.
         self._Q += 1.0 * (leafValue - self._Q) / self._visitsNum
 
-    def updateToRoot(self, leafValue):
+    def update_til_root(self, leafValue):
         """Like a call to update(), but applied recursively for all ancestors.
         """
         # If it is not root, this node's parent should be updated first.
         if self._parent:
-            self._parent.updateToRoot(-leafValue)
+            self._parent.update_til_root(-leafValue)
         self.update(leafValue)
 
-    def getNodeUCB(self, cPuct) -> float:
+    def get_node_ucb(self, cPuct) -> float:
         """Calculate and return the value for this node.
         It is a combination of leaf evaluations Q, and this node's prior
         adjusted for its visit count, u.
@@ -66,7 +66,7 @@ class TreeNode:
         self._u = (cPuct * self._P * np.sqrt(self._parent._visitsNum) / (1 + self._visitsNum))
         return self._Q + self._u
 
-    def isLeaf(self) -> bool:
+    def is_unexpanded(self) -> bool:
         """Check if leaf node (i.e. no nodes below this have been expanded)."""
         return self._children == {}
 

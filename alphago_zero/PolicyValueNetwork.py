@@ -122,7 +122,7 @@ class PolicyValueNet():
         output: a list of (action, probability) tuples for each available
         action and the score of the board state
         """
-        availPosList = board.getAvailablePositions1D()
+        availPosList = board.get_avail_pos()
         current_state = np.ascontiguousarray(convertGameState(board).reshape(
                 -1, 4, self.board_width, self.board_height))
         if self.use_gpu:

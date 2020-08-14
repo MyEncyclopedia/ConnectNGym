@@ -6,7 +6,7 @@ import gym
 from gym import spaces
 
 from PyGameConnectN import PyGameBoard
-from connect_n import ConnectNGame, Move1D
+from connect_n import ConnectNGame, Pos
 
 REWARD_A = 1
 REWARD_B = -1
@@ -34,7 +34,7 @@ class ConnectNGym(gym.Env):
         self.pygameBoard.connectNGame.reset()
         return copy.deepcopy(self.pygameBoard.connectNGame)
 
-    def step(self, action: Move1D) -> Tuple[ConnectNGame, int, bool, None]:
+    def step(self, action: Pos) -> Tuple[ConnectNGame, int, bool, None]:
         """Run one timestep of the environment's dynamics. When end of
         episode is reached, you are responsible for calling `reset()`
         to reset this environment's state.
@@ -54,8 +54,8 @@ class ConnectNGym(gym.Env):
 
         r, c = action
         reward = REWARD_NONE
-        result = self.pygameBoard.move2D(r, c)
-        if self.pygameBoard.isGameOver():
+        result = self.pygameBoard.move_2d(r, c)
+        if self.pygameBoard.is_game_over():
             reward = result
 
         return copy.deepcopy(self.pygameBoard.connectNGame), reward, not result is None, None
@@ -86,10 +86,10 @@ class ConnectNGym(gym.Env):
           mode (str): the mode to render with
         """
         if not self.isGUI:
-            self.pygameBoard.connectNGame.drawText()
+            self.pygameBoard.connectNGame.draw_text()
             time.sleep(self.displaySec)
         else:
             self.pygameBoard.display(sec=self.displaySec)
 
     def get_available_actions(self) -> List[Tuple[int, int]]:
-        return self.pygameBoard.getAvailablePositions2D()
+        return self.pygameBoard.get_avail_positions_2d()

@@ -5,7 +5,7 @@ import time
 from ConnectNGym import ConnectNGym
 from PlannedStrategy import PlannedMinimaxStrategy
 from PyGameConnectN import PyGameBoard
-from connect_n import ConnectNGame, Move1D
+from connect_n import ConnectNGame, Pos
 from strategy import MinimaxStrategy, Strategy
 
 
@@ -13,8 +13,8 @@ class BaseAgent(object):
     def __init__(self):
         pass
 
-    def get_action(self, game: PyGameBoard) -> Move1D:
-        available_actions = game.getAvailablePositions1D()
+    def get_action(self, game: PyGameBoard) -> Pos:
+        available_actions = game.get_avail_pos()
         return random.choice(available_actions)
 
 
@@ -22,8 +22,8 @@ class AIAgent(BaseAgent):
     def __init__(self, strategy: Strategy):
         self.strategy = strategy
 
-    def get_action(self, game: PyGameBoard) -> Move1D:
-        available_actions = game.getAvailablePositions1D()
+    def get_action(self, game: PyGameBoard) -> Pos:
+        available_actions = game.get_avail_pos()
         result, move = self.strategy.action(game.connectNGame)
         assert move in available_actions
         return move
@@ -33,7 +33,7 @@ class HumanAgent(BaseAgent):
     def __init__(self):
         pass
 
-    def get_action(self, game: PyGameBoard) -> Move1D:
+    def get_action(self, game: PyGameBoard) -> Pos:
         return game.next_user_input()
 
 

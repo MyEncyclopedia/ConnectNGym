@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Monte Carlo Tree Search in AlphaGo Zero style, which uses a policy-value
-network to guide the tree search and evaluate the leaf nodes
-
-"""
 
 from __future__ import annotations
 from typing import List, Tuple, Dict, Iterator, ClassVar
@@ -14,10 +9,9 @@ from scipy.special import softmax
 from PyGameConnectN import PyGameBoard
 from alphago_zero.MCTS_Node import TreeNode
 from alphago_zero.PolicyValueNetwork import PolicyValueNet
-from base_agent import BaseAgent
 from connect_n import ConnectNGame, GameStatus, Pos
 
-class MCTS_AlphaGoZero(BaseAgent):
+class MCTS_AlphaGoZero:
     """An implementation of Monte Carlo Tree Search."""
     statusToNodeMap: ClassVar[Dict[GameStatus, TreeNode]] = {}  # gameStatus => TreeNode
 
@@ -70,7 +64,7 @@ class MCTS_AlphaGoZero(BaseAgent):
         # Update value and visit count of nodes in this traversal.
         node.update_til_root(-leafValue)
 
-    def predict_one_step(self, game: ConnectNGame, temp=1e-3) -> Tuple[List[Pos], np.ndarray]:
+    def predictOneStepByPlayouts(self, game: ConnectNGame, temp=1e-3) -> Tuple[List[Pos], np.ndarray]:
         """Run all playouts sequentially and return the available actions and
         their corresponding probabilities.
         state: the current game state
@@ -93,15 +87,12 @@ class MCTS_AlphaGoZero(BaseAgent):
         self._root = TreeNode(None, 1.0)
         MCTS_AlphaGoZero.statusToNodeMap[initialGame.get_status()] = self._root
 
-    def get_action(self, game: PyGameBoard) -> Pos:
-        return self.train_get_next_action(game)[0]
-
-    def train_get_next_action(self, board: PyGameBoard, selfPlay=True, temperature=1e-3) -> Tuple[Pos, np.ndarray]:
+    def trainGetNextAction(self, board: PyGameBoard, selfPlay=True, temperature=1e-3) -> Tuple[Pos, np.ndarray]:
         availableActions = board.get_avail_pos()
         # the pi vector returned by MCTS as in the alphaGo Zero paper
         moveProbs = np.zeros(board.board_size * board.board_size)
         if len(availableActions) > 0:
-            acts, probs = self.predict_one_step(board.connectNGame, temperature)
+            acts, probs = self.predictOneStepByPlayouts(board.connectNGame, temperature)
             moveProbs[list(acts)] = probs
             if selfPlay:
                 # add Dirichlet Noise for exploration (needed for self-play training)
