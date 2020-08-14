@@ -72,7 +72,7 @@ def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent):
 
 
 if __name__ == '__main__':
-    pygameBoard = PyGameBoard(connect_n_game=ConnectNGame(board_size=3, N=3))
+    pygameBoard = PyGameBoard(connect_n_game=ConnectNGame(board_size=3, n=3))
     env = ConnectNGym(pygameBoard)
     env.render(True)
 

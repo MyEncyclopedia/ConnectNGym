@@ -21,14 +21,14 @@ class CountingMinimaxStrategy(Strategy):
 
         game = self.game
         bestMove = None
-        assert not game.gameOver
-        if game.currentPlayer == ConnectNGame.PLAYER_A:
+        assert not game.game_over
+        if game.current_player == ConnectNGame.PLAYER_A:
             ret = -math.inf
             for pos in game.get_avail_pos_2d():
                 move = pos
                 result = game.move_2d(*pos)
                 if result is None:
-                    assert not game.gameOver
+                    assert not game.game_over
                     result, oppMove = self.minimax(game.get_status())
                     self.dpMap[game.get_status()] = result, oppMove
                 else:
@@ -45,7 +45,7 @@ class CountingMinimaxStrategy(Strategy):
                 result = game.move_2d(*pos)
 
                 if result is None:
-                    assert not game.gameOver
+                    assert not game.game_over
                     result, oppMove = self.minimax(game.get_status())
                     self.dpMap[game.get_status()] = result, oppMove
                 else:
@@ -58,7 +58,7 @@ class CountingMinimaxStrategy(Strategy):
 
 
 if __name__ == '__main__':
-    tic_tac_toe = ConnectNGame(N=3, board_size=3)
+    tic_tac_toe = ConnectNGame(n=3, board_size=3)
     strategy = CountingMinimaxStrategy()
     strategy.action(tic_tac_toe)
     print(f'Game States Number {len(strategy.dpMap)}')

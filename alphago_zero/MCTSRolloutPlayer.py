@@ -62,7 +62,7 @@ class MCTSRolloutPlayer(BaseAgent):
         # for the current player.
         action_and_probs, leaf_value = self._policy_value_net.policy_value_fn(game)
         # Check for end of game.
-        end, winner = game.gameOver, game.gameResult
+        end, winner = game.game_over, game.game_result
         if not end:
             child_node = node.expand(action_and_probs)
             MCTSRolloutPlayer.status_2_node_map[game.get_status()] = child_node

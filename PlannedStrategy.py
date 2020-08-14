@@ -17,7 +17,7 @@ class PlannedMinimaxStrategy(Strategy):
     def action(self, game: ConnectNGame) -> Tuple[int, Tuple[int, int]]:
         game = copy.deepcopy(game)
 
-        player = game.currentPlayer
+        player = game.current_player
         bestResult = player * -1  # assume opponent win as worst result
         bestMove = None
         for move in game.get_avail_pos_2d():
@@ -45,20 +45,20 @@ class PlannedMinimaxStrategy(Strategy):
         for s in similarStates:
             if s in self.dpMap:
                 return self.dpMap[s]
-        print(f'{len(self.game.actionStack)}: {len(self.dpMap)}')
+        print(f'{len(self.game.action_stack)}: {len(self.dpMap)}')
 
         game = self.game
         bestMove = None
-        assert not game.gameOver
+        assert not game.game_over
         thisState = game.get_status()
 
-        if game.currentPlayer == ConnectNGame.PLAYER_A:
+        if game.current_player == ConnectNGame.PLAYER_A:
             ret = -math.inf
             for pos in game.get_avail_pos_2d():
                 move = pos
                 result = game.move_2d(*pos)
                 if result is None:
-                    assert not game.gameOver
+                    assert not game.game_over
                     result = self.minimax(game.get_status())
                     self._updateDP(game.get_status(), result)
                 else:
@@ -74,7 +74,7 @@ class PlannedMinimaxStrategy(Strategy):
                 move = pos
                 result = game.move_2d(*pos)
                 if result is None:
-                    assert not game.gameOver
+                    assert not game.game_over
                     result = self.minimax(game.get_status())
                     self._updateDP(game.get_status(), result)
                 else:
@@ -111,6 +111,6 @@ class PlannedMinimaxStrategy(Strategy):
 
 
 if __name__ == '__main__':
-    connectNGame = ConnectNGame(N=3, board_size=3)
+    connectNGame = ConnectNGame(n=3, board_size=3)
 
     strategy = PlannedMinimaxStrategy(connectNGame)

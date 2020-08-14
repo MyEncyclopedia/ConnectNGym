@@ -14,16 +14,16 @@ class ConnectNGame:
     RESULT_A_WIN = 1
     RESULT_B_WIN = -1
 
-    def __init__(self, N: int = 3, board_size: int = 3):
-        assert N <= board_size
-        self.N = N
+    def __init__(self, n: int = 3, board_size: int = 3):
+        assert n <= board_size
+        self.n = n
         self.board_size = board_size
         self.board = [[ConnectNGame.AVAILABLE] * self.board_size for _ in range(self.board_size)]
-        self.gameOver = False
-        self.gameResult = None
-        self.currentPlayer = ConnectNGame.PLAYER_A
-        self.remainingPosNum = self.board_size * self.board_size
-        self.actionStack = []
+        self.game_over = False
+        self.game_result = None
+        self.current_player = ConnectNGame.PLAYER_A
+        self.remaining_pos_num = self.board_size * self.board_size
+        self.action_stack = []
 
     def move(self, pos: Pos) -> int:
         r, c = pos // self.board_size, pos % self.board_size
@@ -37,28 +37,28 @@ class ConnectNGame:
         :return: None: game ongoing
         """
         assert self.board[r][c] == ConnectNGame.AVAILABLE
-        self.board[r][c] = self.currentPlayer
-        self.actionStack.append((r, c))
-        self.remainingPosNum -= 1
+        self.board[r][c] = self.current_player
+        self.action_stack.append((r, c))
+        self.remaining_pos_num -= 1
         if self.check_win(r, c):
-            self.gameOver = True
-            self.gameResult = self.currentPlayer
-            return self.currentPlayer
-        if self.remainingPosNum == 0:
-            self.gameOver = True
-            self.gameResult = ConnectNGame.RESULT_TIE
+            self.game_over = True
+            self.game_result = self.current_player
+            return self.current_player
+        if self.remaining_pos_num == 0:
+            self.game_over = True
+            self.game_result = ConnectNGame.RESULT_TIE
             return ConnectNGame.RESULT_TIE
-        self.currentPlayer *= -1
+        self.current_player *= -1
 
     def undo(self):
-        if len(self.actionStack) > 0:
-            lastAction = self.actionStack.pop()
+        if len(self.action_stack) > 0:
+            lastAction = self.action_stack.pop()
             r, c = lastAction
             self.board[r][c] = ConnectNGame.AVAILABLE
-            self.currentPlayer = ConnectNGame.PLAYER_A if len(self.actionStack) % 2 == 0 else ConnectNGame.PLAYER_B
-            self.remainingPosNum += 1
-            self.gameOver = False
-            self.gameResult = None
+            self.current_player = ConnectNGame.PLAYER_A if len(self.action_stack) % 2 == 0 else ConnectNGame.PLAYER_B
+            self.remaining_pos_num += 1
+            self.game_over = False
+            self.game_result = None
         else:
             raise Exception('No lastAction')
 
@@ -75,8 +75,8 @@ class ConnectNGame:
         north_east = self.get_connected_num(r, c, -1, 1)
         south_west = self.get_connected_num(r, c, 1, -1)
 
-        if (north + south + 1 >= self.N) or (east + west + 1 >= self.N) or \
-                (south_east + north_west + 1 >= self.N) or (north_east + south_west + 1 >= self.N):
+        if (north + south + 1 >= self.n) or (east + west + 1 >= self.n) or \
+                (south_east + north_west + 1 >= self.n) or (north_east + south_west + 1 >= self.n):
             return True
         return False
 
@@ -115,18 +115,18 @@ class ConnectNGame:
 
     def reset(self):
         self.board = [[ConnectNGame.AVAILABLE] * self.board_size for _ in range(self.board_size)]
-        self.gameOver = False
-        self.gameResult = None
-        self.currentPlayer = ConnectNGame.PLAYER_A
-        self.remainingPosNum = self.board_size * self.board_size
-        self.actionStack = []
+        self.game_over = False
+        self.game_result = None
+        self.current_player = ConnectNGame.PLAYER_A
+        self.remaining_pos_num = self.board_size * self.board_size
+        self.action_stack = []
 
     def draw_text(self):
         print('')
         print('------')
-        for r in range(self.N):
+        for r in range(self.n):
             row = ''
-            for c in range(self.N):
+            for c in range(self.n):
                 row += 'O' if self.board[r][c] == ConnectNGame.PLAYER_A else 'X' if self.board[r][
                                                                                         c] == ConnectNGame.PLAYER_B else '.'
             print(row)
@@ -134,7 +134,7 @@ class ConnectNGame:
 
 
 if __name__ == '__main__':
-    tic_tac_toe = ConnectNGame(N=3, board_size=3)
+    tic_tac_toe = ConnectNGame(n=3, board_size=3)
     tic_tac_toe.move_2d(0, 0)
     tic_tac_toe.move_2d(1, 1)
 

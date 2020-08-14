@@ -10,7 +10,7 @@ class PyGameBoard:
     def __init__(self, connect_n_game: ConnectNGame):
         self.connect_n_game = connect_n_game
         self.board_size = connect_n_game.board_size
-        self.connect_num = connect_n_game.N
+        self.connect_num = connect_n_game.n
         self.grid_size = 40
         self.start_x, self.start_y = 30, 50
         self.edge_size = self.grid_size / 2
@@ -58,7 +58,7 @@ class PyGameBoard:
         return self.connect_n_game.move_2d(r, c)
 
     def is_game_over(self) -> bool:
-        return self.connect_n_game.gameOver
+        return self.connect_n_game.game_over
 
     def get_avail_positions_2d(self) -> List[Move2D]:
         return self.connect_n_game.get_avail_pos_2d()
@@ -67,7 +67,7 @@ class PyGameBoard:
         return self.connect_n_game.get_avail_pos()
 
     def get_current_player(self) -> int:
-        return self.connect_n_game.currentPlayer
+        return self.connect_n_game.current_player
 
     def get_status(self) -> GameStatus:
         return self.connect_n_game.get_status()
@@ -76,16 +76,16 @@ class PyGameBoard:
         self.screen.fill((255, 255, 255))
         # print(self.clock.get_fps())
         msg = None
-        if self.connect_n_game.gameOver:
+        if self.connect_n_game.game_over:
             title = f"Game Over"
             pygame.display.set_caption(title)
-            if self.connect_n_game.gameResult == ConnectNGame.RESULT_TIE:
+            if self.connect_n_game.game_result == ConnectNGame.RESULT_TIE:
                 msg = 'Draw'
             else:
-                msg = "{0} Win".format("Black" if self.connect_n_game.gameResult == ConnectNGame.PLAYER_A else "White")
+                msg = "{0} Win".format("Black" if self.connect_n_game.game_result == ConnectNGame.PLAYER_A else "White")
         else:
             pygame.display.set_caption(f"Connect-{self.connect_num}, {self.board_size}x{self.board_size}")
-            msg = "{0} Turn".format("Black" if self.connect_n_game.currentPlayer == ConnectNGame.PLAYER_A else "White")
+            msg = "{0} Turn".format("Black" if self.connect_n_game.current_player == ConnectNGame.PLAYER_A else "White")
         self.screen.blit(self.font.render(msg, True, (0, 122, 255)),
                          (self.grid_size * self.board_size + 30, 50))
 
@@ -102,7 +102,7 @@ class PyGameBoard:
         size = (self.board_size - 1) * self.grid_size + self.edge_size * 2
         pos = e.pos
         if origin_x <= pos[0] <= origin_x + size and origin_y <= pos[1] <= origin_y + size:
-            if not self.connect_n_game.gameOver:
+            if not self.connect_n_game.game_over:
                 x = pos[0] - origin_x
                 y = pos[1] - origin_y
                 r = int(y // self.grid_size)

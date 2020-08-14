@@ -54,7 +54,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         # for the current player.
         action_and_probs, leaf_value = self._policy_value_net.policy_value_fn(game)
         # Check for end of game.
-        end, winner = game.gameOver, game.gameResult
+        end, winner = game.game_over, game.game_result
         if not end:
             for action, prob in action_and_probs:
                 game.move(action)

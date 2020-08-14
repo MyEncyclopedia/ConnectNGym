@@ -24,8 +24,8 @@ def convertGameState(state: ConnectNGame) -> np.ndarray:
     """
 
     square_state = np.zeros((4, state.board_size, state.board_size))
-    if state.actionStack:
-        actions = np.array(state.actionStack) # moves * 2
+    if state.action_stack:
+        actions = np.array(state.action_stack) # moves * 2
         move_curr = actions[::2]
         move_oppo = actions[1::2]
         # todo eliminate for
@@ -35,7 +35,7 @@ def convertGameState(state: ConnectNGame) -> np.ndarray:
             square_state[1][move] = 1.0
         # indicate the last move location
         square_state[2][actions[-1]] = 1.0
-    if len(state.actionStack) % 2 == 0:
+    if len(state.action_stack) % 2 == 0:
         square_state[3][:, :] = 1.0  # indicate the colour to play
     return square_state[:, ::-1, :]
 

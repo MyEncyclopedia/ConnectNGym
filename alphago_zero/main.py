@@ -174,7 +174,7 @@ def update_policy(mini_batch, policy_value_net, args):
 #     return win_ratio
 
 def train(args):
-    initial_game = ConnectNGame(board_size=args.board_size, N=args.n_in_row)
+    initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
     # pygame_board = PyGameBoard(connectNGame=game)
 
     data_buffer = deque(maxlen=args.buffer_size)
