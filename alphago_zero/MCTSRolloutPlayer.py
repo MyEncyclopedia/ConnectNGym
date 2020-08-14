@@ -29,8 +29,8 @@ class MCTSRolloutPlayer(BaseAgent):
             relying on the prior more.
         """
         self._root = TreeNode(None, 1.0)
-        self._policyValueNet = policy_value_net
-        self._cPuct = c_puct
+        self._policy_value_net = policy_value_net
+        self._c_puct = c_puct
         self._playout_num = playout_num
 
     def get_action(self, game: PyGameBoard) -> Pos:
@@ -54,13 +54,13 @@ class MCTSRolloutPlayer(BaseAgent):
             if node.is_leaf():
                 break
             # Greedily select next move.
-            action, node = node.select(self._cPuct)
+            action, node = node.select(self._c_puct)
             game.move(action)
 
         # Evaluate the leaf using a network which outputs a list of
         # (action, probability) tuples p and also a score v in [-1, 1]
         # for the current player.
-        action_and_probs, leaf_value = self._policyValueNet.policy_value_fn(game)
+        action_and_probs, leaf_value = self._policy_value_net.policy_value_fn(game)
         # Check for end of game.
         end, winner = game.gameOver, game.gameResult
         if not end:

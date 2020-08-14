@@ -63,13 +63,13 @@ def start_play(self, player1, player2, start_player=0, is_shown=1):
                     print("Game end. Tie")
             return winner
 
-def selfPlayOneGame(player: MCTSAlphaGoZeroPlayer, pygameBoard: PyGameBoard, temperature, showGUI=False) \
+def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard, temperature, show_gui=False) \
         -> Tuple[int, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
     """
 
     :param player:
     :param args:
-    :param showGUI:
+    :param show_gui:
     :return:
         winner: int
         List[]
@@ -82,16 +82,16 @@ def selfPlayOneGame(player: MCTSAlphaGoZeroPlayer, pygameBoard: PyGameBoard, tem
     mcts_probs: list[np.ndarray] = []
     current_players: list[int] = []
     while True:
-        move, move_probs = player.train_get_next_action(pygameBoard, temperature=temperature)
+        move, move_probs = player.train_get_next_action(pygame_board, temperature=temperature)
         # store the data
-        states.append(convertGameState(pygameBoard.connectNGame))
+        states.append(convertGameState(pygame_board.connectNGame))
         mcts_probs.append(move_probs)
-        current_players.append(pygameBoard.get_current_player())
+        current_players.append(pygame_board.get_current_player())
         # perform a move
-        pygameBoard.move(move)
-        if showGUI:
-            pygameBoard.display()
-        end, winner = pygameBoard.connectNGame.gameOver, pygameBoard.connectNGame.gameResult
+        pygame_board.move(move)
+        if show_gui:
+            pygame_board.display()
+        end, winner = pygame_board.connectNGame.gameOver, pygame_board.connectNGame.gameResult
         if end:
             # winner from the perspective of the current player of each state
             winners_z = np.zeros(len(current_players))
@@ -100,7 +100,7 @@ def selfPlayOneGame(player: MCTSAlphaGoZeroPlayer, pygameBoard: PyGameBoard, tem
                 winners_z[np.array(current_players) != winner] = -1.0
             # reset MCTS root node
             # player.resetPlayer()
-            if showGUI:
+            if show_gui:
                 if winner != -1:
                     print("Game end. Winner is player:", winner)
                 else:
@@ -188,7 +188,7 @@ def train(args):
             for b in range(args.play_batch_size):
                 game = copy.deepcopy(initial_game)
                 pygame_board = PyGameBoard(connectNGame=game)
-                winner, play_data = selfPlayOneGame(mctsPlayer, pygame_board, args.temperature)
+                winner, play_data = self_play_one_game(mctsPlayer, pygame_board, args.temperature)
                 mctsPlayer.reset(initial_game)
                 play_data = list(play_data)[:]
                 # augment the data
