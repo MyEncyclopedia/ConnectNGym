@@ -17,7 +17,7 @@ class TreeNode:
     def __init__(self, parentNode: TreeNode, prior_p: float):
         self._parent = parentNode
         self._children: Dict[int, TreeNode] = {}  # a map from action to TreeNode
-        self._visitsNum = 0
+        self._visit_num = 0
         self._Q = 0
         self._u = 0
         self._P = prior_p
@@ -44,9 +44,9 @@ class TreeNode:
             perspective.
         """
         # Count visit.
-        self._visitsNum += 1
+        self._visit_num += 1
         # Update Q, a running average of values for all visits.
-        self._Q += 1.0 * (leaf_value - self._Q) / self._visitsNum
+        self._Q += 1.0 * (leaf_value - self._Q) / self._visit_num
 
     def update_til_root(self, leaf_value):
         """Like a call to update(), but applied recursively for all ancestors.
@@ -63,7 +63,7 @@ class TreeNode:
         c_puct: a number in (0, inf) controlling the relative impact of
             value Q, and prior probability P, on this node's score.
         """
-        self._u = (cPuct * self._P * np.sqrt(self._parent._visitsNum) / (1 + self._visitsNum))
+        self._u = (cPuct * self._P * np.sqrt(self._parent._visit_num) / (1 + self._visit_num))
         return self._Q + self._u
 
     def is_leaf(self) -> bool:

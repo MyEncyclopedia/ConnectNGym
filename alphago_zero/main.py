@@ -180,7 +180,7 @@ def train(args):
     data_buffer = deque(maxlen=args.buffer_size)
 
     policyValueNet = PolicyValueNet(args.board_size, args.board_size)
-    mctsPlayer = MCTSAlphaGoZeroPlayer(policyValueNet, cPuct=args.c_puct, playoutNum=args.n_playout)
+    mctsPlayer = MCTSAlphaGoZeroPlayer(policyValueNet, c_puct=args.c_puct, playout_num=args.n_playout)
     mctsPlayer.reset(initialGame)
 
     try:
