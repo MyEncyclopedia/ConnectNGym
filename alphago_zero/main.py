@@ -84,14 +84,14 @@ def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard,
     while True:
         move, move_probs = player.train_get_next_action(pygame_board, temperature=temperature)
         # store the data
-        states.append(convertGameState(pygame_board.connectNGame))
+        states.append(convertGameState(pygame_board.connect_n_game))
         mcts_probs.append(move_probs)
         current_players.append(pygame_board.get_current_player())
         # perform a move
         pygame_board.move(move)
         if show_gui:
             pygame_board.display()
-        end, winner = pygame_board.connectNGame.gameOver, pygame_board.connectNGame.gameResult
+        end, winner = pygame_board.connect_n_game.gameOver, pygame_board.connect_n_game.gameResult
         if end:
             # winner from the perspective of the current player of each state
             winners_z = np.zeros(len(current_players))
@@ -187,7 +187,7 @@ def train(args):
         for i in range(args.game_batch_num):
             for b in range(args.play_batch_size):
                 game = copy.deepcopy(initial_game)
-                pygame_board = PyGameBoard(connectNGame=game)
+                pygame_board = PyGameBoard(connect_n_game=game)
                 winner, play_data = self_play_one_game(mctsPlayer, pygame_board, args.temperature)
                 mctsPlayer.reset(initial_game)
                 play_data = list(play_data)[:]

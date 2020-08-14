@@ -7,10 +7,10 @@ from ConnectNGame import ConnectNGame, Move2D, Pos, GameStatus
 
 class PyGameBoard:
 
-    def __init__(self, connectNGame: ConnectNGame):
-        self.connectNGame = connectNGame
-        self.board_size = connectNGame.board_size
-        self.connect_num = connectNGame.N
+    def __init__(self, connect_n_game: ConnectNGame):
+        self.connect_n_game = connect_n_game
+        self.board_size = connect_n_game.board_size
+        self.connect_num = connect_n_game.N
         self.grid_size = 40
         self.start_x, self.start_y = 30, 50
         self.edge_size = self.grid_size / 2
@@ -52,40 +52,40 @@ class PyGameBoard:
     # proxy methods
     def move(self, pos: int) -> int:
         r, c = pos // self.board_size, pos % self.board_size
-        return self.connectNGame.move_2d(r, c)
+        return self.connect_n_game.move_2d(r, c)
 
     def move_2d(self, r: int, c: int) -> int:
-        return self.connectNGame.move_2d(r, c)
+        return self.connect_n_game.move_2d(r, c)
 
     def is_game_over(self) -> bool:
-        return self.connectNGame.gameOver
+        return self.connect_n_game.gameOver
 
     def get_avail_positions_2d(self) -> List[Move2D]:
-        return self.connectNGame.get_avail_pos_2d()
+        return self.connect_n_game.get_avail_pos_2d()
 
     def get_avail_pos(self) -> List[Pos]:
-        return self.connectNGame.get_avail_pos()
+        return self.connect_n_game.get_avail_pos()
 
     def get_current_player(self) -> int:
-        return self.connectNGame.currentPlayer
+        return self.connect_n_game.currentPlayer
 
     def get_status(self) -> GameStatus:
-        return self.connectNGame.get_status()
+        return self.connect_n_game.get_status()
 
     def _render(self):
         self.screen.fill((255, 255, 255))
         # print(self.clock.get_fps())
         msg = None
-        if self.connectNGame.gameOver:
+        if self.connect_n_game.gameOver:
             title = f"Game Over"
             pygame.display.set_caption(title)
-            if self.connectNGame.gameResult == ConnectNGame.RESULT_TIE:
+            if self.connect_n_game.gameResult == ConnectNGame.RESULT_TIE:
                 msg = 'Draw'
             else:
-                msg = "{0} Win".format("Black" if self.connectNGame.gameResult == ConnectNGame.PLAYER_A else "White")
+                msg = "{0} Win".format("Black" if self.connect_n_game.gameResult == ConnectNGame.PLAYER_A else "White")
         else:
             pygame.display.set_caption(f"Connect-{self.connect_num}, {self.board_size}x{self.board_size}")
-            msg = "{0} Turn".format("Black" if self.connectNGame.currentPlayer == ConnectNGame.PLAYER_A else "White")
+            msg = "{0} Turn".format("Black" if self.connect_n_game.currentPlayer == ConnectNGame.PLAYER_A else "White")
         self.screen.blit(self.font.render(msg, True, (0, 122, 255)),
                          (self.grid_size * self.board_size + 30, 50))
 
@@ -102,12 +102,12 @@ class PyGameBoard:
         size = (self.board_size - 1) * self.grid_size + self.edge_size * 2
         pos = e.pos
         if origin_x <= pos[0] <= origin_x + size and origin_y <= pos[1] <= origin_y + size:
-            if not self.connectNGame.gameOver:
+            if not self.connect_n_game.gameOver:
                 x = pos[0] - origin_x
                 y = pos[1] - origin_y
                 r = int(y // self.grid_size)
                 c = int(x // self.grid_size)
-                valid = self.connectNGame.check_action(r, c)
+                valid = self.connect_n_game.check_action(r, c)
                 if valid:
                     self.action = (r, c)
                     return self.action
@@ -131,7 +131,7 @@ class PyGameBoard:
 
         for r in range(self.board_size):
             for c in range(self.board_size):
-                piece = self.connectNGame.board[r][c]
+                piece = self.connect_n_game.board[r][c]
                 if piece != ConnectNGame.AVAILABLE:
                     if piece == ConnectNGame.PLAYER_A:
                         color = (0, 0, 0)

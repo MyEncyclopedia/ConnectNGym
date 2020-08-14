@@ -24,7 +24,7 @@ class AIAgent(BaseAgent):
 
     def get_action(self, game: PyGameBoard) -> Pos:
         available_actions = game.get_avail_pos()
-        result, move = self.strategy.action(game.connectNGame)
+        result, move = self.strategy.action(game.connect_n_game)
         assert move in available_actions
         return move
 
@@ -72,7 +72,7 @@ def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent):
 
 
 if __name__ == '__main__':
-    pygameBoard = PyGameBoard(connectNGame=ConnectNGame(board_size=3, N=3))
+    pygameBoard = PyGameBoard(connect_n_game=ConnectNGame(board_size=3, N=3))
     env = ConnectNGym(pygameBoard)
     env.render(True)
 

@@ -31,8 +31,8 @@ class ConnectNGym(gym.Env):
         Returns:
           observation (object): the initial observation.
         """
-        self.pygameBoard.connectNGame.reset()
-        return copy.deepcopy(self.pygameBoard.connectNGame)
+        self.pygameBoard.connect_n_game.reset()
+        return copy.deepcopy(self.pygameBoard.connect_n_game)
 
     def step(self, action: Pos) -> Tuple[ConnectNGame, int, bool, None]:
         """Run one timestep of the environment's dynamics. When end of
@@ -58,7 +58,7 @@ class ConnectNGym(gym.Env):
         if self.pygameBoard.is_game_over():
             reward = result
 
-        return copy.deepcopy(self.pygameBoard.connectNGame), reward, not result is None, None
+        return copy.deepcopy(self.pygameBoard.connect_n_game), reward, not result is None, None
 
     def render(self, mode='human'):
         """
@@ -86,7 +86,7 @@ class ConnectNGym(gym.Env):
           mode (str): the mode to render with
         """
         if not self.isGUI:
-            self.pygameBoard.connectNGame.draw_text()
+            self.pygameBoard.connect_n_game.draw_text()
             time.sleep(self.displaySec)
         else:
             self.pygameBoard.display(sec=self.displaySec)

@@ -14,7 +14,7 @@ from scipy.special import softmax
 from PyGameConnectN import PyGameBoard
 from alphago_zero.MCTSNode import TreeNode
 from alphago_zero.PolicyValueNetwork import PolicyValueNet
-from base_agent import BaseAgent
+from agent import BaseAgent
 from ConnectNGame import ConnectNGame, GameStatus, Pos
 
 class MCTSAlphaGoZeroPlayer(BaseAgent):
@@ -97,21 +97,21 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         return self.train_get_next_action(game)[0]
 
     def train_get_next_action(self, board: PyGameBoard, self_play=True, temperature=1e-3) -> Tuple[Pos, np.ndarray]:
-        availableActions = board.get_avail_pos()
+        avail_pos = board.get_avail_pos()
         # the pi vector returned by MCTS as in the alphaGo Zero paper
-        moveProbs = np.zeros(board.board_size * board.board_size)
-        if len(availableActions) > 0:
-            acts, probs = self.predict_one_step(board.connectNGame, temperature)
-            moveProbs[list(acts)] = probs
+        move_probs = np.zeros(board.board_size * board.board_size)
+        if len(avail_pos) > 0:
+            acts, probs = self.predict_one_step(board.connect_n_game, temperature)
+            move_probs[list(acts)] = probs
             if self_play:
                 # add Dirichlet Noise for exploration (needed for self-play training)
                 move = np.random.choice(acts, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
-                assert move in board.connectNGame.get_avail_pos()
+                assert move in board.connect_n_game.get_avail_pos()
             else:
                 # with the default temp=1e-3, it is almost equivalent
                 # to choosing the move with the highest prob
                 move = np.random.choice(acts, p=probs)
 
-            return move, moveProbs
+            return move, move_probs
         else:
             raise Exception('No actions')

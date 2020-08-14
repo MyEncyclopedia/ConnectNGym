@@ -9,7 +9,7 @@ from scipy.special import softmax
 from PyGameConnectN import PyGameBoard
 from alphago_zero.MCTSNode import TreeNode
 from alphago_zero.PolicyValueNetwork import PolicyValueNet
-from base_agent import BaseAgent
+from agent import BaseAgent
 from ConnectNGame import ConnectNGame, GameStatus, Pos
 from operator import itemgetter
 
