@@ -121,6 +121,7 @@ class MCTS(object):
                 game.move1D(action)
                 childNode = node.expand(action, prob)
                 MCTS.statusToNodeMap[game.getStatus()] = childNode
+                # print(f'nodes {len(MCTS.statusToNodeMap)}')
                 game.undo()
 
         else:
@@ -130,7 +131,7 @@ class MCTS(object):
         # Update value and visit count of nodes in this traversal.
         node.updateToRoot(-leafValue)
 
-    def simulate(self, game: ConnectNGame, temp=1e-3) -> Tuple[List[Move1D], np.ndarray]:
+    def decideOneStepByPlayouts(self, game: ConnectNGame, temp=1e-3) -> Tuple[List[Move1D], np.ndarray]:
         """Run all playouts sequentially and return the available actions and
         their corresponding probabilities.
         state: the current game state
@@ -141,7 +142,8 @@ class MCTS(object):
             self._playout(state_copy)
 
         # calc the move probabilities based on visit counts at the root node
-        act_visits = [(act, node._n_visits) for act, node in self._root._children.items()]
+        currentNode = MCTS.statusToNodeMap[game.getStatus()]
+        act_visits = [(act, node._n_visits) for act, node in currentNode._children.items()]
         acts, visits = zip(*act_visits)
         actProbs = softmax(1.0 / temp * np.log(np.array(visits) + 1e-10))
 
@@ -169,14 +171,12 @@ class MCTSPlayer(object):
         # the pi vector returned by MCTS as in the alphaGo Zero paper
         moveProbs = np.zeros(board.board_size * board.board_size)
         if len(availableActions) > 0:
-            acts, probs = self.mcts.simulate(board.connectNGame, temperature)
+            acts, probs = self.mcts.decideOneStepByPlayouts(board.connectNGame, temperature)
             moveProbs[list(acts)] = probs
             if self._isSelfplay:
                 # add Dirichlet Noise for exploration (needed for self-play training)
-                while True:
-                    move = np.random.choice(acts, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
-                    if move in board.connectNGame.getAvailablePositions1D():
-                        break
+                move = np.random.choice(acts, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
+                assert move in board.connectNGame.getAvailablePositions1D()
             else:
                 # with the default temp=1e-3, it is almost equivalent
                 # to choosing the move with the highest prob

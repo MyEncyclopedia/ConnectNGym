@@ -73,12 +73,12 @@ class Net(nn.Module):
         # action policy layers
         x_act = F.relu(self.act_conv1(x))
         x_act = x_act.view(-1, 4*self.board_width*self.board_height)
-        x_act = F.log_softmax(self.act_fc1(x_act))
+        x_act = F.log_softmax(self.act_fc1(x_act), dim=0)
         # state value layers
         x_val = F.relu(self.val_conv1(x))
         x_val = x_val.view(-1, 2*self.board_width*self.board_height)
         x_val = F.relu(self.val_fc1(x_val))
-        x_val = F.tanh(self.val_fc2(x_val))
+        x_val = torch.tanh(self.val_fc2(x_val))
         return x_act, x_val
 
 
@@ -94,8 +94,7 @@ class PolicyValueNet():
             self.policy_value_net = Net(board_width, board_height).cuda()
         else:
             self.policy_value_net = Net(board_width, board_height)
-        self.optimizer = optim.Adam(self.policy_value_net.parameters(),
-                                    weight_decay=self.l2_const)
+        self.optimizer = optim.Adam(self.policy_value_net.parameters(), weight_decay=self.l2_const)
 
         if model_file:
             net_params = torch.load(model_file)
