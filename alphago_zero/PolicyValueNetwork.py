@@ -18,7 +18,7 @@ from ConnectNGame import ConnectNGame, Pos
 
 MoveWithProb = Tuple[Pos, np.ndarray]
 
-def convertGameState(state: ConnectNGame) -> np.ndarray:
+def convert_game_state(state: ConnectNGame) -> np.ndarray:
     """return the board state from the perspective of the current player.
     state shape: 4*width*height
     """
@@ -82,7 +82,7 @@ class Net(nn.Module):
         return x_act, x_val
 
 
-class PolicyValueNet():
+class PolicyValueNet:
     """policy-value network """
     def __init__(self, board_width, board_height, model_file=None, use_gpu=False):
         self.use_gpu = use_gpu
@@ -123,7 +123,7 @@ class PolicyValueNet():
         action and the score of the board state
         """
         availPosList = board.get_avail_pos()
-        current_state = np.ascontiguousarray(convertGameState(board).reshape(
+        current_state = np.ascontiguousarray(convert_game_state(board).reshape(
                 -1, 4, self.board_width, self.board_height))
         if self.use_gpu:
             log_act_probs, value = self.policy_value_net(

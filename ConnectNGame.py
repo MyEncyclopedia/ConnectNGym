@@ -5,14 +5,17 @@ from typing import NewType
 GameStatus = Tuple[Tuple[int, ...]]
 Move2D = Tuple[int, int]
 Pos = int
+GameAbsoluteResult = int # 1: A wins; 0: Tie; -1: B wins
+GameRelativeResult = int # 1: current player wins; 0: Tie; -1: opponent wins
+
 
 class ConnectNGame:
     PLAYER_A = 1
     PLAYER_B = -1
     AVAILABLE = 0
     RESULT_TIE = 0
-    RESULT_A_WIN = 1
-    RESULT_B_WIN = -1
+    # RESULT_A_WIN = 1
+    # RESULT_B_WIN = -1
 
     def __init__(self, n: int = 3, board_size: int = 3):
         assert n <= board_size
@@ -25,11 +28,11 @@ class ConnectNGame:
         self.remaining_pos_num = self.board_size * self.board_size
         self.action_stack = []
 
-    def move(self, pos: Pos) -> int:
+    def move(self, pos: Pos) -> GameAbsoluteResult:
         r, c = pos // self.board_size, pos % self.board_size
         return self.move_2d(r, c)
 
-    def move_2d(self, r: int, c: int) -> int:
+    def move_2d(self, r: int, c: int) -> GameAbsoluteResult:
         """
 
         :param r:

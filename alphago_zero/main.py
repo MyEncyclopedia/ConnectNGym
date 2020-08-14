@@ -11,7 +11,7 @@ from PyGameConnectN import PyGameBoard
 from agent import play
 from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer
 from alphago_zero.MCTSRolloutPlayer import MCTSRolloutPlayer
-from alphago_zero.PolicyValueNetwork import PolicyValueNet, convertGameState
+from alphago_zero.PolicyValueNetwork import PolicyValueNet, convert_game_state
 from ConnectNGame import ConnectNGame
 import numpy as np
 
@@ -60,7 +60,7 @@ def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard,
     while True:
         move, move_probs = player.train_get_next_action(pygame_board, temperature=temperature)
         # store the data
-        states.append(convertGameState(pygame_board.connect_n_game))
+        states.append(convert_game_state(pygame_board.connect_n_game))
         mcts_probs.append(move_probs)
         current_players.append(pygame_board.get_current_player())
         # perform a move
@@ -174,6 +174,7 @@ def train(args):
                 if (i + 1) % args.check_freq == 0:
                     print("current self-play batch: {}".format(i + 1))
                     win_ratio = policy_evaluate()
+                    print(f'{win_ratio}')
                 # self.policy_value_net.save_model('./current_policy.model')
                 # if win_ratio > self.best_win_ratio:
                 #     print("New best policy!!!!!!!!")

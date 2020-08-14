@@ -4,13 +4,11 @@ from __future__ import annotations
 from typing import List, Tuple, Dict, Iterator, ClassVar
 import numpy as np
 import copy
-from scipy.special import softmax
 
 from PyGameConnectN import PyGameBoard
 from alphago_zero.MCTSNode import TreeNode
-from alphago_zero.PolicyValueNetwork import PolicyValueNet
 from agent import BaseAgent
-from ConnectNGame import ConnectNGame, GameStatus, Pos
+from ConnectNGame import ConnectNGame, GameStatus, Pos, GameRelativeResult
 from operator import itemgetter
 
 
@@ -38,11 +36,11 @@ class MCTSRolloutPlayer(BaseAgent):
 
         Return: the selected action
         """
-        # todo map
         for n in range(self._playout_num):
             game_copy = copy.deepcopy(game)
             self._playout(game_copy)
-        return max(self._root._children.items(), key=lambda act_node: act_node[1]._visit_num)[0]
+        current_node = MCTSRolloutPlayer.status_2_node_map[game.get_status()]
+        return max(current_node._children.items(), key=lambda act_node: act_node[1]._visit_num)[0]
 
     def _playout(self, game: ConnectNGame):
         """Run a single playout from the root to the leaf, getting a value at
@@ -66,50 +64,44 @@ class MCTSRolloutPlayer(BaseAgent):
         if not end:
             child_node = node.expand(action_and_probs)
             MCTSRolloutPlayer.status_2_node_map[game.get_status()] = child_node
-        else:
-            # for end state，return the "true" leaf_value
-            return float(winner)
 
         leaf_value = self._evaluate_rollout(game)
         # Update value and visit count of nodes in this traversal.
         node.update_til_root(-leaf_value)
 
-    def _evaluate_rollout(self, state, limit=1000):
+    def _evaluate_rollout(self, game: ConnectNGame) -> GameRelativeResult:
         """Use the rollout policy to play until the end of the game,
         returning +1 if the current player wins, -1 if the opponent wins,
         and 0 if it is a tie.
         """
-        player = state.get_current_player()
-        for i in range(limit):
-            end, winner = state.game_end()
+        player = game.current_player
+        while True:
+            end, winner = game.game_over, game.game_result
             if end:
                 break
-            action_probs = self.rollout_policy_fn(state)
+            action_probs = self.rollout_policy_fn(game)
             max_action = max(action_probs, key=itemgetter(1))[0]
-            state.do_move(max_action)
-        else:
-            # If no break from the loop, issue a warning.
-            print("WARNING: rollout reached move limit")
-        if winner == -1:  # tie
-            return 0
-        else:
-            return 1 if winner == player else -1
+            game.move(max_action)
+        if winner == ConnectNGame.RESULT_TIE:
+            return ConnectNGame.RESULT_TIE
+        return 1 if winner == player else -1
 
     def reset(self, initial_state: ConnectNGame):
         MCTSRolloutPlayer.status_2_node_map = {}
         self._root = TreeNode(None, 1.0)
         MCTSRolloutPlayer.status_2_node_map[initial_state.get_status()] = self._root
 
-    def rollout_policy_fn(self, board):
+    def rollout_policy_fn(self, game: ConnectNGame):
         """a coarse, fast version of policy_fn used in the rollout phase."""
         # rollout randomly
-        action_probs = np.random.rand(len(board.availables))
-        return zip(board.availables, action_probs)
+        action_probs = np.random.rand(len(game.get_avail_pos()))
+        return zip(game.get_avail_pos(), action_probs)
 
 
-    def rollout_policy_value_fn(self, board):
+    def rollout_policy_value_fn(self, game: ConnectNGame):
         """a function that takes in a state and outputs a list of (action, probability)
         tuples and a score for the state"""
         # return uniform probabilities and 0 score for pure MCTS
-        action_probs = np.ones(len(board.availables))/len(board.availables)
-        return zip(board.availables, action_probs), 0
+        move_list = game.get_avail_pos()
+        action_probs = np.ones(len(move_list)) / len(move_list)
+        return zip(move_list, action_probs), 0

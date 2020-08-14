@@ -41,6 +41,8 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         the leaf and propagating it back through its parents.
         State is modified in-place, so a copy must be provided.
         """
+        player = game.current_player
+
         node = MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()]
         while True:
             if node.is_leaf():
@@ -62,12 +64,15 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
                 MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()] = child_node
                 # print(f'nodes {len(MCTS.statusToNodeMap)}')
                 game.undo()
-
         else:
-            # for end state，return the "true" leaf_value
-            return float(winner)
+            if winner == ConnectNGame.RESULT_TIE:
+                leaf_value = ConnectNGame.RESULT_TIE
+            else:
+                leaf_value = 1 if winner == player else -1
+            leaf_value = float(leaf_value)
 
         # Update value and visit count of nodes in this traversal.
+        # todo why
         node.update_til_root(-leaf_value)
 
     def predict_one_step(self, game: ConnectNGame, temp=1e-3) -> Tuple[List[Pos], np.ndarray]:
