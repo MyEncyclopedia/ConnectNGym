@@ -81,8 +81,8 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
             self._playout(state_copy)
 
         # calc the move probabilities based on visit counts at the root node
-        currentNode = MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()]
-        act_visits = [(act, node._visit_num) for act, node in currentNode._children.items()]
+        current_node = MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()]
+        act_visits = [(act, node._visit_num) for act, node in current_node._children.items()]
         acts, visits = zip(*act_visits)
         actProbs = softmax(1.0 / temp * np.log(np.array(visits) + 1e-10))
 

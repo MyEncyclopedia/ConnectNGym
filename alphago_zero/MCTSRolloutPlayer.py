@@ -64,8 +64,8 @@ class MCTSRolloutPlayer(BaseAgent):
         # Check for end of game.
         end, winner = game.gameOver, game.gameResult
         if not end:
-            childNode = node.expand(action_and_probs)
-            MCTSRolloutPlayer.status_2_node_map[game.get_status()] = childNode
+            child_node = node.expand(action_and_probs)
+            MCTSRolloutPlayer.status_2_node_map[game.get_status()] = child_node
         else:
             # for end state，return the "true" leaf_value
             return float(winner)

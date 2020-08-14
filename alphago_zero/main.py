@@ -75,18 +75,18 @@ def selfPlayOneGame(player: MCTSAlphaGoZeroPlayer, pygameBoard: PyGameBoard, tem
         List[]
     """
     """ start a self-play game using a MCTS player, reuse the search tree,
-    and store the self-play data: (state, mctsProbs, z) for training
+    and store the self-play data: (state, mcts_probs, z) for training
     """
 
     states: list[np.ndarray] = []
-    mctsProbs: list[np.ndarray] = []
-    currentPlayers: list[int] = []
+    mcts_probs: list[np.ndarray] = []
+    current_players: list[int] = []
     while True:
-        move, moveProbs = player.train_get_next_action(pygameBoard, temperature=temperature)
+        move, move_probs = player.train_get_next_action(pygameBoard, temperature=temperature)
         # store the data
         states.append(convertGameState(pygameBoard.connectNGame))
-        mctsProbs.append(moveProbs)
-        currentPlayers.append(pygameBoard.get_current_player())
+        mcts_probs.append(move_probs)
+        current_players.append(pygameBoard.get_current_player())
         # perform a move
         pygameBoard.move(move)
         if showGUI:
@@ -94,10 +94,10 @@ def selfPlayOneGame(player: MCTSAlphaGoZeroPlayer, pygameBoard: PyGameBoard, tem
         end, winner = pygameBoard.connectNGame.gameOver, pygameBoard.connectNGame.gameResult
         if end:
             # winner from the perspective of the current player of each state
-            winners_z = np.zeros(len(currentPlayers))
+            winners_z = np.zeros(len(current_players))
             if winner != -1:
-                winners_z[np.array(currentPlayers) == winner] = 1.0
-                winners_z[np.array(currentPlayers) != winner] = -1.0
+                winners_z[np.array(current_players) == winner] = 1.0
+                winners_z[np.array(current_players) != winner] = -1.0
             # reset MCTS root node
             # player.resetPlayer()
             if showGUI:
@@ -105,10 +105,10 @@ def selfPlayOneGame(player: MCTSAlphaGoZeroPlayer, pygameBoard: PyGameBoard, tem
                     print("Game end. Winner is player:", winner)
                 else:
                     print("Game end. Tie")
-            return winner, list(zip(states, mctsProbs, winners_z))
+            return winner, list(zip(states, mcts_probs, winners_z))
 
 
-def updatePolicy(mini_batch, policy_value_net, args):
+def update_policy(mini_batch, policy_value_net, args):
     """update the policy-value net"""
     state_batch = [data[0] for data in mini_batch]
     mcts_probs_batch = [data[1] for data in mini_batch]
@@ -174,22 +174,22 @@ def updatePolicy(mini_batch, policy_value_net, args):
 #     return win_ratio
 
 def train(args):
-    initialGame = ConnectNGame(board_size=args.board_size, N=args.n_in_row)
-    # pygameBoard = PyGameBoard(connectNGame=game)
+    initial_game = ConnectNGame(board_size=args.board_size, N=args.n_in_row)
+    # pygame_board = PyGameBoard(connectNGame=game)
 
     data_buffer = deque(maxlen=args.buffer_size)
 
-    policyValueNet = PolicyValueNet(args.board_size, args.board_size)
-    mctsPlayer = MCTSAlphaGoZeroPlayer(policyValueNet, c_puct=args.c_puct, playout_num=args.n_playout)
-    mctsPlayer.reset(initialGame)
+    policy_value_net = PolicyValueNet(args.board_size, args.board_size)
+    mctsPlayer = MCTSAlphaGoZeroPlayer(policy_value_net, c_puct=args.c_puct, playout_num=args.n_playout)
+    mctsPlayer.reset(initial_game)
 
     try:
         for i in range(args.game_batch_num):
             for b in range(args.play_batch_size):
-                game = copy.deepcopy(initialGame)
-                pygameBoard = PyGameBoard(connectNGame=game)
-                winner, play_data = selfPlayOneGame(mctsPlayer, pygameBoard, args.temperature)
-                mctsPlayer.reset(initialGame)
+                game = copy.deepcopy(initial_game)
+                pygame_board = PyGameBoard(connectNGame=game)
+                winner, play_data = selfPlayOneGame(mctsPlayer, pygame_board, args.temperature)
+                mctsPlayer.reset(initial_game)
                 play_data = list(play_data)[:]
                 # augment the data
                 # play_data = getRotatedStatus(play_data)
@@ -198,7 +198,7 @@ def train(args):
                 print(f'batch i:{i + 1}, episode_len:{episode_len}')
                 if len(data_buffer) > args.batch_size:
                     mini_batch = random.sample(data_buffer, args.batch_size)
-                    loss, entropy = updatePolicy(mini_batch, policyValueNet, args)
+                    loss, entropy = update_policy(mini_batch, policy_value_net, args)
                 # check the performance of the current model,
                 # and save the model params
                 if (i + 1) % args.check_freq == 0:
