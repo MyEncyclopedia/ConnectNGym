@@ -16,27 +16,27 @@ from ConnectNGame import ConnectNGame
 import numpy as np
 
 
-# def getRotatedStatus(play_data: list):
-#     """augment the data set by rotation and flipping
-#     play_data: [(state, mcts_prob, winner_z), ..., ...]
-#     """
-#     extend_data = []
-#     for state, mcts_porb, winner in play_data:
-#         for i in [1, 2, 3, 4]:
-#             # rotate counterclockwise
-#             equi_state = np.array([np.rot90(s, i) for s in state])
-#             equi_mcts_prob = np.rot90(np.flipud(
-#                 mcts_porb.reshape((state.shape[1], state.shape[1]))), i)
-#             extend_data.append((equi_state,
-#                                 np.flipud(equi_mcts_prob).flatten(),
-#                                 winner))
-#             # flip horizontally
-#             equi_state = np.array([np.fliplr(s) for s in equi_state])
-#             equi_mcts_prob = np.fliplr(equi_mcts_prob)
-#             extend_data.append((equi_state,
-#                                 np.flipud(equi_mcts_prob).flatten(),
-#                                 winner))
-#     return extend_data
+def get_rotated_status(play_data: list):
+    """augment the data set by rotation and flipping
+    play_data: [(state, mcts_prob, winner_z), ..., ...]
+    """
+    extend_data = []
+    for state, mcts_porb, winner in play_data:
+        for i in [1, 2, 3, 4]:
+            # rotate counterclockwise
+            equi_state = np.array([np.rot90(s, i) for s in state])
+            equi_mcts_prob = np.rot90(np.flipud(
+                mcts_porb.reshape((state.shape[1], state.shape[1]))), i)
+            extend_data.append((equi_state,
+                                np.flipud(equi_mcts_prob).flatten(),
+                                winner))
+            # flip horizontally
+            equi_state = np.array([np.fliplr(s) for s in equi_state])
+            equi_mcts_prob = np.fliplr(equi_mcts_prob)
+            extend_data.append((equi_state,
+                                np.flipud(equi_mcts_prob).flatten(),
+                                winner))
+    return extend_data
 
 
 def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard, temperature, show_gui=False) \
@@ -162,8 +162,8 @@ def train(args):
                 alphago_zero_player.reset(initial_game)
                 play_data = list(play_data)[:]
                 # augment the data
-                # play_data = getRotatedStatus(play_data)
-                # data_buffer.extend(play_data)
+                play_data = get_rotated_status(play_data)
+                data_buffer.extend(play_data)
                 episode_len = len(play_data)
                 print(f'batch i:{i + 1}, episode_len:{episode_len}')
                 if len(data_buffer) > args.batch_size:

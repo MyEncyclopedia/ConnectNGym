@@ -16,12 +16,12 @@ REWARD_NONE = None
 
 class ConnectNGym(gym.Env):
 
-    def __init__(self, pygameBoard: PyGameBoard, isGUI=True, displaySec=2):
-        self.pygameBoard = pygameBoard
-        self.isGUI = isGUI
-        self.displaySec = displaySec
-        self.action_space = spaces.Discrete(pygameBoard.board_size * pygameBoard.board_size)
-        self.observation_space = spaces.Discrete(pygameBoard.board_size * pygameBoard.board_size)
+    def __init__(self, board: PyGameBoard, is_gui=True, display_sec=2):
+        self.pygame_board = board
+        self.is_gui = is_gui
+        self.display_sec = display_sec
+        self.action_space = spaces.Discrete(board.board_size * board.board_size)
+        self.observation_space = spaces.Discrete(board.board_size * board.board_size)
         self.seed()
         self.reset()
 
@@ -31,8 +31,8 @@ class ConnectNGym(gym.Env):
         Returns:
           observation (object): the initial observation.
         """
-        self.pygameBoard.connect_n_game.reset()
-        return copy.deepcopy(self.pygameBoard.connect_n_game)
+        self.pygame_board.connect_n_game.reset()
+        return copy.deepcopy(self.pygame_board.connect_n_game)
 
     def step(self, action: Pos) -> Tuple[ConnectNGame, int, bool, None]:
         """Run one timestep of the environment's dynamics. When end of
@@ -54,11 +54,11 @@ class ConnectNGym(gym.Env):
 
         r, c = action
         reward = REWARD_NONE
-        result = self.pygameBoard.move_2d(r, c)
-        if self.pygameBoard.is_game_over():
+        result = self.pygame_board.move_2d(r, c)
+        if self.pygame_board.is_game_over():
             reward = result
 
-        return copy.deepcopy(self.pygameBoard.connect_n_game), reward, not result is None, None
+        return copy.deepcopy(self.pygame_board.connect_n_game), reward, not result is None, None
 
     def render(self, mode='human'):
         """
@@ -85,11 +85,9 @@ class ConnectNGym(gym.Env):
         Args:
           mode (str): the mode to render with
         """
-        if not self.isGUI:
-            self.pygameBoard.connect_n_game.draw_text()
-            time.sleep(self.displaySec)
+        if not self.is_gui:
+            self.pygame_board.connect_n_game.draw_text()
+            time.sleep(self.display_sec)
         else:
-            self.pygameBoard.display(sec=self.displaySec)
+            self.pygame_board.display(sec=self.display_sec)
 
-    def get_available_actions(self) -> List[Tuple[int, int]]:
-        return self.pygameBoard.get_avail_positions_2d()

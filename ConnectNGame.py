@@ -125,15 +125,12 @@ class ConnectNGame:
         self.action_stack = []
 
     def draw_text(self):
-        print('')
-        print('------')
         for r in range(self.n):
             row = ''
             for c in range(self.n):
-                row += 'O' if self.board[r][c] == ConnectNGame.PLAYER_A else 'X' if self.board[r][
-                                                                                        c] == ConnectNGame.PLAYER_B else '.'
-            print(row)
-        print('------')
+                row += 'O' if self.board[r][c] == ConnectNGame.PLAYER_A else 'X' \
+                    if self.board[r][c] == ConnectNGame.PLAYER_B else '.'
+            print(f'{row}\n')
 
 
 if __name__ == '__main__':

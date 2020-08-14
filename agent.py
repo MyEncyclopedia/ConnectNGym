@@ -41,12 +41,12 @@ def play_human_vs_human(env: ConnectNGym):
 
 
 def play_human_vs_ai(env: ConnectNGym):
-    planned_minimax_agent = AIAgent(PlannedMinimaxStrategy(env.pygameBoard.connectNGame))
+    planned_minimax_agent = AIAgent(PlannedMinimaxStrategy(env.pygame_board.connectNGame))
     play(env, HumanAgent(), planned_minimax_agent)
 
 
 def play_ai_vs_ai(env: ConnectNGym):
-    planned_minimax_agent = AIAgent(PlannedMinimaxStrategy(env.pygameBoard.connectNGame))
+    planned_minimax_agent = AIAgent(PlannedMinimaxStrategy(env.pygame_board.connectNGame))
     play(env, planned_minimax_agent, planned_minimax_agent)
 
 
