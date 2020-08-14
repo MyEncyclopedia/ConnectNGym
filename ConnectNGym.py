@@ -54,7 +54,7 @@ class ConnectNGym(gym.Env):
 
         r, c = action
         reward = REWARD_NONE
-        result = self.pygameBoard.move(r, c)
+        result = self.pygameBoard.move2D(r, c)
         if self.pygameBoard.isGameOver():
             reward = result
 
@@ -92,4 +92,4 @@ class ConnectNGym(gym.Env):
             self.pygameBoard.display(sec=self.displaySec)
 
     def get_available_actions(self) -> List[Tuple[int, int]]:
-        return self.pygameBoard.getAvailablePositions()
+        return self.pygameBoard.getAvailablePositions2D()

@@ -97,7 +97,7 @@ class ConnectNGame:
             i += 1
         return result
 
-    def getAvailablePositions(self) -> List[Move2D]:
+    def getAvailablePositions2D(self) -> List[Move2D]:
         return [(i, j) for i in range(self.board_size) for j in range(self.board_size) if
                 self.board[i][j] == ConnectNGame.AVAILABLE]
 

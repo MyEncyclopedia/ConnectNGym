@@ -24,7 +24,7 @@ class CountingMinimaxStrategy(Strategy):
         assert not game.gameOver
         if game.currentPlayer == ConnectNGame.PLAYER_A:
             ret = -math.inf
-            for pos in game.getAvailablePositions():
+            for pos in game.getAvailablePositions2D():
                 move = pos
                 result = game.move(*pos)
                 if result is None:
@@ -40,7 +40,7 @@ class CountingMinimaxStrategy(Strategy):
             return ret, bestMove
         else:
             ret = math.inf
-            for pos in game.getAvailablePositions():
+            for pos in game.getAvailablePositions2D():
                 move = pos
                 result = game.move(*pos)
 

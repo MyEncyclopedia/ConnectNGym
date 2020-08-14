@@ -14,9 +14,10 @@ from scipy.special import softmax
 from PyGameConnectN import PyGameBoard
 from alphago_zero.MCTS_Node import TreeNode
 from alphago_zero.PolicyValueNetwork import PolicyValueNet
+from base_agent import BaseAgent
 from connect_n import ConnectNGame, GameStatus, Move1D
 
-class MCTS_AlphaGoZero:
+class MCTS_AlphaGoZero(BaseAgent):
     """An implementation of Monte Carlo Tree Search."""
     statusToNodeMap: ClassVar[Dict[GameStatus, TreeNode]] = {}  # gameStatus => TreeNode
 
@@ -91,6 +92,9 @@ class MCTS_AlphaGoZero:
         MCTS_AlphaGoZero.statusToNodeMap = {}
         self._root = TreeNode(None, 1.0)
         MCTS_AlphaGoZero.statusToNodeMap[initialGame.getStatus()] = self._root
+
+    def get_action(self, game: PyGameBoard) -> Move1D:
+        return self.trainGetNextAction(game)[0]
 
     def trainGetNextAction(self, board: PyGameBoard, selfPlay=True, temperature=1e-3) -> Tuple[Move1D, np.ndarray]:
         availableActions = board.getAvailablePositions1D()

@@ -20,7 +20,7 @@ class PlannedMinimaxStrategy(Strategy):
         player = game.currentPlayer
         bestResult = player * -1  # assume opponent win as worst result
         bestMove = None
-        for move in game.getAvailablePositions():
+        for move in game.getAvailablePositions2D():
             game.move(*move)
             status = game.getStatus()
             game.undo()
@@ -54,7 +54,7 @@ class PlannedMinimaxStrategy(Strategy):
 
         if game.currentPlayer == ConnectNGame.PLAYER_A:
             ret = -math.inf
-            for pos in game.getAvailablePositions():
+            for pos in game.getAvailablePositions2D():
                 move = pos
                 result = game.move(*pos)
                 if result is None:
@@ -70,7 +70,7 @@ class PlannedMinimaxStrategy(Strategy):
             return ret
         else:
             ret = math.inf
-            for pos in game.getAvailablePositions():
+            for pos in game.getAvailablePositions2D():
                 move = pos
                 result = game.move(*pos)
                 if result is None:

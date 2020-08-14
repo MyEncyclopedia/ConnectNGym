@@ -54,14 +54,14 @@ class PyGameBoard:
         r, c = pos // self.board_size, pos % self.board_size
         return self.connectNGame.move(r, c)
 
-    def move(self, r: int, c: int) -> int:
+    def move2D(self, r: int, c: int) -> int:
         return self.connectNGame.move(r, c)
 
     def isGameOver(self) -> bool:
         return self.connectNGame.gameOver
 
-    def getAvailablePositions(self) -> List[Move2D]:
-        return self.connectNGame.getAvailablePositions()
+    def getAvailablePositions2D(self) -> List[Move2D]:
+        return self.connectNGame.getAvailablePositions2D()
 
     def getAvailablePositions1D(self) -> List[Move1D]:
         return self.connectNGame.getAvailablePositions1D()
@@ -148,6 +148,6 @@ if __name__ == '__main__':
     pygameBoard = PyGameBoard(connectNGame)
     while not pygameBoard.isGameOver():
         pos = pygameBoard.next_user_input()
-        pygameBoard.move(*pos)
+        pygameBoard.move2D(*pos)
 
     pygame.quit()
