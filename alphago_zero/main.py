@@ -1,13 +1,16 @@
 import argparse
 import copy
 import random
-from collections import deque
+from collections import deque, defaultdict
 from typing import Tuple, List
 
 import torch
 
+from ConnectNGym import ConnectNGym
 from PyGameConnectN import PyGameBoard
+from agent import play
 from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer
+from alphago_zero.MCTSRolloutPlayer import MCTSRolloutPlayer
 from alphago_zero.PolicyValueNetwork import PolicyValueNet, convertGameState
 from ConnectNGame import ConnectNGame
 import numpy as np
@@ -35,33 +38,6 @@ import numpy as np
 #                                 winner))
 #     return extend_data
 
-def start_play(self, player1, player2, start_player=0, is_shown=1):
-    """start a game between two players"""
-    if start_player not in (0, 1):
-        raise Exception('start_player should be either 0 (player1 first) '
-                        'or 1 (player2 first)')
-    self.board.init_board(start_player)
-    p1, p2 = self.board.players
-    player1.set_player_ind(p1)
-    player2.set_player_ind(p2)
-    players = {p1: player1, p2: player2}
-    if is_shown:
-        self.graphic(self.board, player1.player, player2.player)
-    while True:
-        current_player = self.board.get_current_player()
-        player_in_turn = players[current_player]
-        move = player_in_turn.get_action(self.board)
-        self.board.do_move(move)
-        if is_shown:
-            self.graphic(self.board, player1.player, player2.player)
-        end, winner = self.board.game_end()
-        if end:
-            if is_shown:
-                if winner != -1:
-                    print("Game end. Winner is", players[winner])
-                else:
-                    print("Game end. Tie")
-            return winner
 
 def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard, temperature, show_gui=False) \
         -> Tuple[int, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
@@ -91,7 +67,7 @@ def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard,
         pygame_board.move(move)
         if show_gui:
             pygame_board.display()
-        end, winner = pygame_board.connect_n_game.gameOver, pygame_board.connect_n_game.gameResult
+        end, winner = pygame_board.connect_n_game.game_over, pygame_board.connect_n_game.game_result
         if end:
             # winner from the perspective of the current player of each state
             winners_z = np.zeros(len(current_players))
@@ -150,46 +126,40 @@ def update_policy(mini_batch, policy_value_net, args):
     return loss, entropy
 
 
-# def policy_evaluate(self, n_games=10):
-#     """
-#     Evaluate the trained policy by playing against the pure MCTS player
-#     Note: this is only for monitoring the progress of training
-#     """
-#     current_mcts_player = MCTSPlayer(self.policy_value_net.policy_value_fn,
-#                                      c_puct=self.c_puct,
-#                                      n_playout=self.n_playout)
-#     pure_mcts_player = MCTS_Pure(c_puct=5,
-#                                  n_playout=self.pure_mcts_playout_num)
-#     win_cnt = defaultdict(int)
-#     for i in range(n_games):
-#         winner = self.game.start_play(current_mcts_player,
-#                                       pure_mcts_player,
-#                                       start_player=i % 2,
-#                                       is_shown=0)
-#         win_cnt[winner] += 1
-#     win_ratio = 1.0*(win_cnt[1] + 0.5*win_cnt[-1]) / n_games
-#     print("num_playouts:{}, win: {}, lose: {}, tie:{}".format(
-#             self.pure_mcts_playout_num,
-#             win_cnt[1], win_cnt[2], win_cnt[-1]))
-#     return win_ratio
+def policy_evaluate(self, n_games=10):
+    """
+    Evaluate the trained policy by playing against the pure MCTS player
+    Note: this is only for monitoring the progress of training
+    """
+    alphago_zero_player = MCTSAlphaGoZeroPlayer(self.policy_value_net, c_puct=self.c_puct, playout_num=args.playout_num)
+    mcts_rollout_player = MCTSRolloutPlayer(c_puct=5, playout_num=args.rollout_playout_num)
+    win_cnt = defaultdict(int)
+    board = PyGameBoard(connect_n_game=ConnectNGame(board_size=3, n=3))
+    env = ConnectNGym(board)
+    for i in range(n_games):
+        winner = play(env, alphago_zero_player, mcts_rollout_player, render=True)
+        win_cnt[winner] += 1
+    win_ratio = 1.0*(win_cnt[1] + 0.5*win_cnt[-1]) / n_games
+    print("num_playouts:{}, win: {}, lose: {}, tie:{}".format( self.pure_mcts_playout_num, win_cnt[1], win_cnt[2], win_cnt[-1]))
+    return win_ratio
 
 def train(args):
     initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
-    # pygame_board = PyGameBoard(connectNGame=game)
+    # board = PyGameBoard(connectNGame=game)
 
     data_buffer = deque(maxlen=args.buffer_size)
 
     policy_value_net = PolicyValueNet(args.board_size, args.board_size)
-    mctsPlayer = MCTSAlphaGoZeroPlayer(policy_value_net, c_puct=args.c_puct, playout_num=args.n_playout)
-    mctsPlayer.reset(initial_game)
+    alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, c_puct=args.c_puct, playout_num=args.playout_num)
+    alphago_zero_player.reset(initial_game)
 
     try:
         for i in range(args.game_batch_num):
             for b in range(args.play_batch_size):
                 game = copy.deepcopy(initial_game)
-                pygame_board = PyGameBoard(connect_n_game=game)
-                winner, play_data = self_play_one_game(mctsPlayer, pygame_board, args.temperature)
-                mctsPlayer.reset(initial_game)
+                board = PyGameBoard(connect_n_game=game)
+                winner, play_data = self_play_one_game(alphago_zero_player, board, args.temperature)
+                alphago_zero_player.reset(initial_game)
                 play_data = list(play_data)[:]
                 # augment the data
                 # play_data = getRotatedStatus(play_data)
@@ -203,7 +173,7 @@ def train(args):
                 # and save the model params
                 if (i + 1) % args.check_freq == 0:
                     print("current self-play batch: {}".format(i + 1))
-                    win_ratio = self.policy_evaluate()
+                    win_ratio = policy_evaluate()
                 # self.policy_value_net.save_model('./current_policy.model')
                 # if win_ratio > self.best_win_ratio:
                 #     print("New best policy!!!!!!!!")
@@ -229,17 +199,17 @@ if __name__ == "__main__":
     parser.add_argument("--learning_rate", type=float, default=2e-3)
     parser.add_argument("--lr_multiplier", type=float, default=1.0)  # adaptively adjust the learning rate based on KL
     parser.add_argument("--temperature", type=float, default=1.0)  # the temperature param
-    parser.add_argument("--n_playout", type=int, default=400)  # num of simulations for each move
+    parser.add_argument("--playout_num", type=int, default=400)  # num of simulations for each move
+    parser.add_argument("--rollout_playout_num", type=int, default=1000)  # num of simulations for each move
     parser.add_argument("--c_puct", type=int, default=5)
     parser.add_argument("--buffer_size", type=int, default=10000)
     parser.add_argument("--batch_size", type=int, default=256)  # mini-batch size for training
     parser.add_argument("--play_batch_size", type=int, default=1)
     parser.add_argument("--epochs", type=int, default=5)  # num of train_steps for each update
     parser.add_argument("--kl_targ", type=float, default=0.02)
-    parser.add_argument("--check_freq", type=int, default=50)
+    parser.add_argument("--check_freq", type=int, default=20)
     parser.add_argument("--game_batch_num", type=int, default=1500)
     parser.add_argument("--best_win_ratio", type=float, default=0.0)
-    parser.add_argument("--pure_mcts_playout_num", type=int, default=1000)  # num of simulations used for the pure mcts,
     # which is used as the opponent to evaluate the trained policy
 
     args = parser.parse_args()

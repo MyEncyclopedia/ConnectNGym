@@ -18,7 +18,7 @@ class MCTSRolloutPlayer(BaseAgent):
     """An implementation of Monte Carlo Tree Search."""
     status_2_node_map: ClassVar[Dict[GameStatus, TreeNode]] = {}  # gameStatus => TreeNode
 
-    def __init__(self, policy_value_net: PolicyValueNet, c_puct=5, playout_num=10000):
+    def __init__(self, c_puct=5, playout_num=10000):
         """
         policy_value_fn: a function that takes in a board state and outputs
             a list of (action, probability) tuples and also a score in [-1, 1]
@@ -29,7 +29,6 @@ class MCTSRolloutPlayer(BaseAgent):
             relying on the prior more.
         """
         self._root = TreeNode(None, 1.0)
-        self._policy_value_net = policy_value_net
         self._c_puct = c_puct
         self._playout_num = playout_num
 
@@ -39,10 +38,11 @@ class MCTSRolloutPlayer(BaseAgent):
 
         Return: the selected action
         """
+        # todo map
         for n in range(self._playout_num):
             game_copy = copy.deepcopy(game)
             self._playout(game_copy)
-        return max(self._root._children.items(), key=lambda act_node: act_node[1]._n_visits)[0]
+        return max(self._root._children.items(), key=lambda act_node: act_node[1]._visit_num)[0]
 
     def _playout(self, game: ConnectNGame):
         """Run a single playout from the root to the leaf, getting a value at
@@ -60,7 +60,7 @@ class MCTSRolloutPlayer(BaseAgent):
         # Evaluate the leaf using a network which outputs a list of
         # (action, probability) tuples p and also a score v in [-1, 1]
         # for the current player.
-        action_and_probs, leaf_value = self._policy_value_net.policy_value_fn(game)
+        action_and_probs, leaf_value = self.rollout_policy_value_fn(game)
         # Check for end of game.
         end, winner = game.game_over, game.game_result
         if not end:
@@ -107,7 +107,7 @@ class MCTSRolloutPlayer(BaseAgent):
         return zip(board.availables, action_probs)
 
 
-    def policy_value_fn(self, board):
+    def rollout_policy_value_fn(self, board):
         """a function that takes in a state and outputs a list of (action, probability)
         tuples and a score for the state"""
         # return uniform probabilities and 0 score for pure MCTS

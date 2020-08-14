@@ -51,24 +51,22 @@ def play_ai_vs_ai(env: ConnectNGym):
     play(env, plannedMinimaxAgent, plannedMinimaxAgent)
 
 
-def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent):
+def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent, render=True) -> int:
     agents = [agent1, agent2]
 
-    while True:
-        env.reset()
-        done = False
-        agent_id = -1
-        while not done:
-            agent_id = (agent_id + 1) % 2
-            agent = agents[agent_id]
-            action = agent.get_action(pygameBoard)
-            _, reward, done, info = env.step(action)
-            env.render(True)
+    env.reset()
+    done = False
+    agent_id = -1
+    while not done:
+        agent_id = (agent_id + 1) % 2
+        agent = agents[agent_id]
+        action = agent.get_action(pygameBoard)
+        _, reward, done, info = env.step(action)
+        env.render(render)
 
-            if done:
-                print(f'result={reward}')
-                time.sleep(3)
-                break
+        if done:
+            print(f'result={reward}')
+            return reward
 
 
 if __name__ == '__main__':
