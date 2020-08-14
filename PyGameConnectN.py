@@ -24,13 +24,13 @@ class PyGameBoard:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(pygame.font.get_default_font(), 20)
 
-    def next_user_input(self) -> Move2D:
+    def next_user_input(self) -> Pos:
         self.action = None
         while not self.action:
             self.check_event()
             self._render()
             self.clock.tick(60)
-        return self.action
+        return self.action[0] * self.board_size + self.action[1]
 
     def check_event(self):
         for e in pygame.event.get():
@@ -50,18 +50,15 @@ class PyGameBoard:
             tick_num -= passed
 
     # proxy methods
-    def move(self, pos: int) -> int:
-        r, c = pos // self.board_size, pos % self.board_size
-        return self.connect_n_game.move_2d(r, c)
-
-    def move_2d(self, r: int, c: int) -> int:
-        return self.connect_n_game.move_2d(r, c)
+    def move(self, pos: Pos) -> int:
+        # r, c = pos // self.board_size, pos % self.board_size
+        return self.connect_n_game.move(pos)
 
     def is_game_over(self) -> bool:
         return self.connect_n_game.game_over
 
-    def get_avail_positions_2d(self) -> List[Move2D]:
-        return self.connect_n_game.get_avail_pos_2d()
+    # def get_avail_positions_2d(self) -> List[Move2D]:
+    #     return self.connect_n_game.get_avail_pos_2d()
 
     def get_avail_pos(self) -> List[Pos]:
         return self.connect_n_game.get_avail_pos()

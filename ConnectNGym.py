@@ -52,9 +52,9 @@ class ConnectNGym(gym.Env):
         """
         # assert self.action_space.contains(action)
 
-        r, c = action
+        # r, c = action
         reward = REWARD_NONE
-        result = self.pygame_board.move_2d(r, c)
+        result = self.pygame_board.move(action)
         if self.pygame_board.is_game_over():
             reward = result
 

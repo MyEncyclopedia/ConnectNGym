@@ -2,12 +2,12 @@ import copy
 import math
 from typing import Tuple
 
-from ConnectNGame import ConnectNGame, Move2D, GameAbsoluteResult, GameStatus
+from ConnectNGame import ConnectNGame, Move2D, GameAbsoluteResult, GameStatus, Pos
 from minimax.strategy import Strategy
 
 
 class CountingMinimaxStrategy(Strategy):
-    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Move2D]:
+    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Pos]:
         self.game = copy.deepcopy(game)
         self.dp_map = {}
         result, move = self.minimax(game.get_status())
@@ -24,9 +24,9 @@ class CountingMinimaxStrategy(Strategy):
         assert not game.game_over
         if game.current_player == ConnectNGame.PLAYER_A:
             ret = -math.inf
-            for pos in game.get_avail_pos_2d():
+            for pos in game.get_avail_pos():
                 move = pos
-                result = game.move_2d(*pos)
+                result = game.move(pos)
                 if result is None:
                     assert not game.game_over
                     result, opp_move = self.minimax(game.get_status())
@@ -40,9 +40,9 @@ class CountingMinimaxStrategy(Strategy):
             return ret, best_move
         else:
             ret = math.inf
-            for pos in game.get_avail_pos_2d():
+            for pos in game.get_avail_pos():
                 move = pos
-                result = game.move_2d(*pos)
+                result = game.move(pos)
 
                 if result is None:
                     assert not game.game_over

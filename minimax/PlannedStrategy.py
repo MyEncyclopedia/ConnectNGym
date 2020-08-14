@@ -2,7 +2,7 @@ import copy
 import math
 from typing import Tuple, List
 
-from ConnectNGame import ConnectNGame, GameStatus, Move2D, GameAbsoluteResult
+from ConnectNGame import ConnectNGame, GameStatus, Move2D, GameAbsoluteResult, Pos
 from minimax.strategy import Strategy
 
 
@@ -14,14 +14,14 @@ class PlannedMinimaxStrategy(Strategy):
         self.result = self.minimax(game.get_status())
         print(f'best result: {self.result}')
 
-    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Move2D]:
+    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Pos]:
         game = copy.deepcopy(game)
 
         player = game.current_player
         best_result = player * -1  # assume opponent win as worst result
         best_move = None
-        for move in game.get_avail_pos_2d():
-            game.move_2d(*move)
+        for move in game.get_avail_pos():
+            game.move(move)
             status = game.get_status()
             game.undo()
 
@@ -40,7 +40,7 @@ class PlannedMinimaxStrategy(Strategy):
 
         return best_result, best_move
 
-    def minimax(self, game_status: GameStatus) -> Tuple[GameAbsoluteResult, Move2D]:
+    def minimax(self, game_status: GameStatus) -> Tuple[GameAbsoluteResult, Pos]:
         similar_states = self.get_similar_status(self.game.get_status())
         for s in similar_states:
             if s in self.dp_map:
@@ -48,15 +48,15 @@ class PlannedMinimaxStrategy(Strategy):
         print(f'{len(self.game.action_stack)}: {len(self.dp_map)}')
 
         game = self.game
-        bestMove = None
+        best_move = None
         assert not game.game_over
-        thisState = game.get_status()
+        this_state = game.get_status()
 
         if game.current_player == ConnectNGame.PLAYER_A:
             ret = -math.inf
-            for pos in game.get_avail_pos_2d():
+            for pos in game.get_avail_pos():
                 move = pos
-                result = game.move_2d(*pos)
+                result = game.move(pos)
                 if result is None:
                     assert not game.game_over
                     result = self.minimax(game.get_status())
@@ -65,14 +65,14 @@ class PlannedMinimaxStrategy(Strategy):
                     self._update_dp(game.get_status(), result)
                 game.undo()
                 ret = max(ret, result)
-                bestMove = move if ret == result else bestMove
-            self._update_dp(thisState, ret)
+                best_move = move if ret == result else best_move
+            self._update_dp(this_state, ret)
             return ret
         else:
             ret = math.inf
-            for pos in game.get_avail_pos_2d():
+            for pos in game.get_avail_pos():
                 move = pos
-                result = game.move_2d(*pos)
+                result = game.move(pos)
                 if result is None:
                     assert not game.game_over
                     result = self.minimax(game.get_status())
@@ -81,8 +81,8 @@ class PlannedMinimaxStrategy(Strategy):
                     self._update_dp(game.get_status(), result)
                 game.undo()
                 ret = min(ret, result)
-                bestMove = move if ret == result else bestMove
-            self._update_dp(thisState, ret)
+                best_move = move if ret == result else best_move
+            self._update_dp(this_state, ret)
             return ret
 
     def _update_dp(self, status: GameStatus, result: GameAbsoluteResult):

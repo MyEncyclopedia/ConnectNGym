@@ -30,9 +30,9 @@ class ConnectNGame:
 
     def move(self, pos: Pos) -> GameAbsoluteResult:
         r, c = pos // self.board_size, pos % self.board_size
-        return self.move_2d(r, c)
+        return self._move_2d(r, c)
 
-    def move_2d(self, r: int, c: int) -> GameAbsoluteResult:
+    def _move_2d(self, r: int, c: int) -> GameAbsoluteResult:
         """
 
         :param r:
@@ -100,9 +100,9 @@ class ConnectNGame:
             i += 1
         return result
 
-    def get_avail_pos_2d(self) -> List[Move2D]:
-        return [(i, j) for i in range(self.board_size) for j in range(self.board_size) if
-                self.board[i][j] == ConnectNGame.AVAILABLE]
+    # def get_avail_pos_2d(self) -> List[Move2D]:
+    #     return [(i, j) for i in range(self.board_size) for j in range(self.board_size) if
+    #             self.board[i][j] == ConnectNGame.AVAILABLE]
 
     def get_avail_pos(self) -> List[Pos]:
         return [i * self.board_size + j
@@ -135,8 +135,8 @@ class ConnectNGame:
 
 if __name__ == '__main__':
     tic_tac_toe = ConnectNGame(n=3, board_size=3)
-    tic_tac_toe.move_2d(0, 0)
-    tic_tac_toe.move_2d(1, 1)
+    tic_tac_toe._move_2d(0, 0)
+    tic_tac_toe._move_2d(1, 1)
 
     # print(minimax(tic_tac_toe, True))
     # print(minimax_dp(tic_tac_toe, tic_tac_toe.getStatus()))
