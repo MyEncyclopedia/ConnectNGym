@@ -7,7 +7,7 @@ from typing import Tuple, List
 import torch
 
 from PyGameConnectN import PyGameBoard
-from alphago_zero.MCTS import MCTSPlayer
+from alphago_zero.MCTS import MCTS
 from alphago_zero.PolicyValueNetwork import PolicyValueNet, convertGameState
 from connect_n import ConnectNGame
 import numpy as np
@@ -36,7 +36,7 @@ def getRotatedStatus(play_data: list):
     return extend_data
 
 
-def selfPlayRollout(player: MCTSPlayer, pygameBoard: PyGameBoard, temperature, showGUI=False) \
+def selfPlayRollout(player: MCTS, pygameBoard: PyGameBoard, temperature, showGUI=False) \
         -> Tuple[int, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
     """
 
@@ -55,7 +55,7 @@ def selfPlayRollout(player: MCTSPlayer, pygameBoard: PyGameBoard, temperature, s
     mctsProbs: list[np.ndarray] = []
     currentPlayers: list[int] = []
     while True:
-        move, moveProbs = player.simulateReturnAction(pygameBoard, temperature=temperature)
+        move, moveProbs = player.trainGetNextAction(pygameBoard, temperature=temperature)
         # store the data
         states.append(convertGameState(pygameBoard.connectNGame))
         mctsProbs.append(moveProbs)
@@ -72,7 +72,7 @@ def selfPlayRollout(player: MCTSPlayer, pygameBoard: PyGameBoard, temperature, s
                 winners_z[np.array(currentPlayers) == winner] = 1.0
                 winners_z[np.array(currentPlayers) != winner] = -1.0
             # reset MCTS root node
-            player.resetPlayer()
+            # player.resetPlayer()
             if showGUI:
                 if winner != -1:
                     print("Game end. Winner is player:", winner)
@@ -130,15 +130,16 @@ def train(args):
     data_buffer = deque(maxlen=args.buffer_size)
 
     policyValueNet = PolicyValueNet(args.board_size, args.board_size)
-    mctsPlayer = MCTSPlayer(policyValueNet, copy.deepcopy(initialGame), c_puct=args.c_puct, n_playout=args.n_playout, isSelfplay=True)
+    mctsPlayer = MCTS(policyValueNet, cPuct=args.c_puct, playoutNum=args.n_playout)
+    mctsPlayer.reset(initialGame)
 
     try:
         for i in range(args.game_batch_num):
-            mctsPlayer.resetPlayer()
             for b in range(args.play_batch_size):
                 game = copy.deepcopy(initialGame)
                 pygameBoard = PyGameBoard(connectNGame=game)
                 winner, play_data = selfPlayRollout(mctsPlayer, pygameBoard, args.temperature)
+                mctsPlayer.reset(initialGame)
                 play_data = list(play_data)[:]
                 # augment the data
                 play_data = getRotatedStatus(play_data)
