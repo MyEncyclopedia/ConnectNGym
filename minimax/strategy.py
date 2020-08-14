@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from functools import lru_cache
 from typing import Tuple
 
-from ConnectNGame import ConnectNGame, Move2D
+from ConnectNGame import ConnectNGame, Move2D, GameStatus, GameAbsoluteResult
 
 
 class Strategy(ABC):
@@ -15,17 +15,17 @@ class Strategy(ABC):
         super().__init__()
 
     @abstractmethod
-    def action(self, game: ConnectNGame) -> Tuple[int, Move2D]:
+    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Move2D]:
         pass
 
 
 class MinimaxStrategy(Strategy):
-    def action(self, game: ConnectNGame) -> Tuple[int, Move2D]:
+    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Move2D]:
         self.game = copy.deepcopy(game)
         result, move = self.minimax()
         return result, move
 
-    def minimax(self) -> Tuple[int, Tuple[int, int]]:
+    def minimax(self) -> Tuple[GameAbsoluteResult, Move2D]:
         game = self.game
         bestMove = None
         assert not game.game_over
@@ -66,7 +66,7 @@ class MinimaxDPStrategy(Strategy):
         return result, move
 
     @lru_cache(maxsize=None)
-    def minimax_dp(self, gameState: Tuple[Tuple[int, ...]]) -> Tuple[int, Move2D]:
+    def minimax_dp(self, game_state: GameStatus) -> Tuple[GameAbsoluteResult, Move2D]:
         game = self.game
         bestMove = None
         assert not game.game_over
@@ -101,12 +101,12 @@ class MinimaxDPStrategy(Strategy):
 
 
 class AlphaBetaStrategy(Strategy):
-    def action(self, game: ConnectNGame) -> Tuple[int, Move2D]:
+    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Move2D]:
         self.game = game
         result, move = self.alpha_beta(self.game.get_status(), -math.inf, math.inf)
         return result, move
 
-    def alpha_beta(self, gameStatus: Tuple[Tuple[int, ...]], alpha: int = None, beta: int = None) \
+    def alpha_beta(self, game_status: GameStatus, alpha: int=None, beta:int=None) \
             -> Tuple[int, Move2D]:
         game = self.game
         bestMove = None
@@ -144,15 +144,15 @@ class AlphaBetaStrategy(Strategy):
 
 
 class AlphaBetaDPStrategy(Strategy):
-    def action(self, game: ConnectNGame) -> Tuple[int, Move2D]:
+    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Move2D]:
         self.game = game
-        self.alphaBetaStack = [(-math.inf, math.inf)]
+        self.alpha_beta_stack = [(-math.inf, math.inf)]
         result, move = self.alpha_beta_dp(self.game.get_status())
         return result, move
 
     @lru_cache(maxsize=None)
-    def alpha_beta_dp(self, gameStatus: Tuple[Tuple[int, ...]]) -> Tuple[int, Move2D]:
-        alpha, beta = self.alphaBetaStack[-1]
+    def alpha_beta_dp(self, game_status: GameStatus) -> Tuple[GameAbsoluteResult, Move2D]:
+        alpha, beta = self.alpha_beta_stack[-1]
         game = self.game
         bestMove = None
         assert not game.game_over
@@ -163,9 +163,9 @@ class AlphaBetaDPStrategy(Strategy):
                 result = game.move_2d(*pos)
                 if result is None:
                     assert not game.game_over
-                    self.alphaBetaStack.append((alpha, beta))
+                    self.alpha_beta_stack.append((alpha, beta))
                     result, oppMove = self.alpha_beta_dp(game.get_status())
-                    self.alphaBetaStack.pop()
+                    self.alpha_beta_stack.pop()
                 game.undo()
                 alpha = max(alpha, result)
                 ret = max(ret, result)
@@ -180,9 +180,9 @@ class AlphaBetaDPStrategy(Strategy):
                 result = game.move_2d(*pos)
                 if result is None:
                     assert not game.game_over
-                    self.alphaBetaStack.append((alpha, beta))
+                    self.alpha_beta_stack.append((alpha, beta))
                     result, oppMove = self.alpha_beta_dp(game.get_status())
-                    self.alphaBetaStack.pop()
+                    self.alpha_beta_stack.pop()
                 game.undo()
                 beta = min(beta, result)
                 ret = min(ret, result)

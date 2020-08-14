@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 import random
-import time
 
 from ConnectNGym import ConnectNGym
-from PlannedStrategy import PlannedMinimaxStrategy
+from minimax.PlannedStrategy import PlannedMinimaxStrategy
 from PyGameConnectN import PyGameBoard
 from ConnectNGame import ConnectNGame, Pos
-from strategy import MinimaxStrategy, Strategy
+from minimax.strategy import Strategy
 
 
 class BaseAgent(object):
