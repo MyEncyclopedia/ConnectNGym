@@ -14,13 +14,13 @@ class TreeNode:
     its visit-count-adjusted prior score u.
     """
 
-    def __init__(self, parentNode: TreeNode, priorProb: float):
+    def __init__(self, parentNode: TreeNode, prior_p: float):
         self._parent = parentNode
         self._children: Dict[int, TreeNode] = {}  # a map from action to TreeNode
         self._visitsNum = 0
         self._Q = 0
         self._u = 0
-        self._P = priorProb
+        self._P = prior_p
 
     def expand(self, action: int, prob: np.ndarray) -> TreeNode:
         """Expand tree by creating new children.
@@ -38,7 +38,7 @@ class TreeNode:
         """
         return max(self._children.items(), key=lambda act_node: act_node[1].get_node_ucb(cPuct))
 
-    def update(self, leafValue):
+    def update(self, leaf_value):
         """Update node values from leaf evaluation.
         leaf_value: the value of subtree evaluation from the current player's
             perspective.
@@ -46,15 +46,15 @@ class TreeNode:
         # Count visit.
         self._visitsNum += 1
         # Update Q, a running average of values for all visits.
-        self._Q += 1.0 * (leafValue - self._Q) / self._visitsNum
+        self._Q += 1.0 * (leaf_value - self._Q) / self._visitsNum
 
-    def update_til_root(self, leafValue):
+    def update_til_root(self, leaf_value):
         """Like a call to update(), but applied recursively for all ancestors.
         """
         # If it is not root, this node's parent should be updated first.
         if self._parent:
-            self._parent.update_til_root(-leafValue)
-        self.update(leafValue)
+            self._parent.update_til_root(-leaf_value)
+        self.update(leaf_value)
 
     def get_node_ucb(self, cPuct) -> float:
         """Calculate and return the value for this node.
@@ -66,7 +66,7 @@ class TreeNode:
         self._u = (cPuct * self._P * np.sqrt(self._parent._visitsNum) / (1 + self._visitsNum))
         return self._Q + self._u
 
-    def is_unexpanded(self) -> bool:
+    def is_leaf(self) -> bool:
         """Check if leaf node (i.e. no nodes below this have been expanded)."""
         return self._children == {}
 

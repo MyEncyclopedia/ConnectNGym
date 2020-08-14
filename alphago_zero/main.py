@@ -7,7 +7,7 @@ from typing import Tuple, List
 import torch
 
 from PyGameConnectN import PyGameBoard
-from alphago_zero.MCTS_AlphaGoZero import MCTS_AlphaGoZero
+from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer
 from alphago_zero.PolicyValueNetwork import PolicyValueNet, convertGameState
 from connect_n import ConnectNGame
 import numpy as np
@@ -63,7 +63,7 @@ def start_play(self, player1, player2, start_player=0, is_shown=1):
                     print("Game end. Tie")
             return winner
 
-def selfPlayOneGame(player: MCTS_AlphaGoZero, pygameBoard: PyGameBoard, temperature, showGUI=False) \
+def selfPlayOneGame(player: MCTSAlphaGoZeroPlayer, pygameBoard: PyGameBoard, temperature, showGUI=False) \
         -> Tuple[int, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
     """
 
@@ -180,7 +180,7 @@ def train(args):
     data_buffer = deque(maxlen=args.buffer_size)
 
     policyValueNet = PolicyValueNet(args.board_size, args.board_size)
-    mctsPlayer = MCTS_AlphaGoZero(policyValueNet, cPuct=args.c_puct, playoutNum=args.n_playout)
+    mctsPlayer = MCTSAlphaGoZeroPlayer(policyValueNet, cPuct=args.c_puct, playoutNum=args.n_playout)
     mctsPlayer.reset(initialGame)
 
     try:
