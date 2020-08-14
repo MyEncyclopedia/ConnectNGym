@@ -9,7 +9,7 @@ import torch
 from PyGameConnectN import PyGameBoard
 from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer
 from alphago_zero.PolicyValueNetwork import PolicyValueNet, convertGameState
-from connect_n import ConnectNGame
+from ConnectNGame import ConnectNGame
 import numpy as np
 
 

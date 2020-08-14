@@ -6,7 +6,7 @@ import gym
 from gym import spaces
 
 from PyGameConnectN import PyGameBoard
-from connect_n import ConnectNGame, Pos
+from ConnectNGame import ConnectNGame, Pos
 
 REWARD_A = 1
 REWARD_B = -1

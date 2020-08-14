@@ -2,7 +2,7 @@ import sys
 from typing import List, Tuple
 import pygame
 from pygame.event import Event
-from connect_n import ConnectNGame, Move2D, Pos, GameStatus
+from ConnectNGame import ConnectNGame, Move2D, Pos, GameStatus
 
 
 class PyGameBoard:

@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from functools import lru_cache
 from typing import Tuple
 
-from connect_n import ConnectNGame, Move2D
+from ConnectNGame import ConnectNGame, Move2D
 
 
 class Strategy(ABC):

@@ -5,7 +5,7 @@ import time
 from ConnectNGym import ConnectNGym
 from PlannedStrategy import PlannedMinimaxStrategy
 from PyGameConnectN import PyGameBoard
-from connect_n import ConnectNGame, Pos
+from ConnectNGame import ConnectNGame, Pos
 from strategy import MinimaxStrategy, Strategy
 
 

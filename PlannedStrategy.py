@@ -2,7 +2,7 @@ import copy
 import math
 from typing import Tuple, List
 
-from connect_n import ConnectNGame
+from ConnectNGame import ConnectNGame
 from strategy import Strategy
 
 

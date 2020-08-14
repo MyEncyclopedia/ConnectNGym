@@ -15,7 +15,7 @@ from PyGameConnectN import PyGameBoard
 from alphago_zero.MCTSNode import TreeNode
 from alphago_zero.PolicyValueNetwork import PolicyValueNet
 from base_agent import BaseAgent
-from connect_n import ConnectNGame, GameStatus, Pos
+from ConnectNGame import ConnectNGame, GameStatus, Pos
 
 class MCTSAlphaGoZeroPlayer(BaseAgent):
     """An implementation of Monte Carlo Tree Search."""

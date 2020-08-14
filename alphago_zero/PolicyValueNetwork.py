@@ -12,11 +12,11 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 
-from connect_n import ConnectNGame
+from ConnectNGame import ConnectNGame, Pos
 
 # from typing import NewType
 
-MoveWithProb = Tuple[int, np.ndarray]
+MoveWithProb = Tuple[Pos, np.ndarray]
 
 def convertGameState(state: ConnectNGame) -> np.ndarray:
     """return the board state from the perspective of the current player.
