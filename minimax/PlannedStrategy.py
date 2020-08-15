@@ -2,7 +2,7 @@ import copy
 import math
 from typing import Tuple, List
 
-from ConnectNGame import ConnectNGame, GameStatus, Move2D, GameAbsoluteResult, Pos
+from ConnectNGame import ConnectNGame, GameStatus, Move2D, GameResult, Pos
 from minimax.strategy import Strategy
 
 
@@ -14,7 +14,7 @@ class PlannedMinimaxStrategy(Strategy):
         self.result = self.minimax(game.get_status())
         print(f'best result: {self.result}')
 
-    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Pos]:
+    def action(self, game: ConnectNGame) -> Tuple[GameResult, Pos]:
         game = copy.deepcopy(game)
 
         player = game.current_player
@@ -40,7 +40,7 @@ class PlannedMinimaxStrategy(Strategy):
 
         return best_result, best_move
 
-    def minimax(self, game_status: GameStatus) -> Tuple[GameAbsoluteResult, Pos]:
+    def minimax(self, game_status: GameStatus) -> Tuple[GameResult, Pos]:
         similar_states = self.get_similar_status(self.game.get_status())
         for s in similar_states:
             if s in self.dp_map:
@@ -85,7 +85,7 @@ class PlannedMinimaxStrategy(Strategy):
             self._update_dp(this_state, ret)
             return ret
 
-    def _update_dp(self, status: GameStatus, result: GameAbsoluteResult):
+    def _update_dp(self, status: GameStatus, result: GameResult):
         similarStates = self.get_similar_status(status)
         for s in similarStates:
             if not s in self.dp_map:

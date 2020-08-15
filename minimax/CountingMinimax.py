@@ -2,18 +2,18 @@ import copy
 import math
 from typing import Tuple
 
-from ConnectNGame import ConnectNGame, GameAbsoluteResult, GameStatus, Pos
+from ConnectNGame import ConnectNGame, GameResult, GameStatus, Pos
 from minimax.strategy import Strategy
 
 
 class CountingMinimaxStrategy(Strategy):
-    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Pos]:
+    def action(self, game: ConnectNGame) -> Tuple[GameResult, Pos]:
         self.game = copy.deepcopy(game)
         self.dp_map = {}
         result, move = self.minimax(game.get_status())
         return result, move
 
-    def minimax(self, game_status: GameStatus) -> Tuple[GameAbsoluteResult, Pos]:
+    def minimax(self, game_status: GameStatus) -> Tuple[GameResult, Pos]:
         # print(f'Current {len(strategy.dpMap)}')
 
         if game_status in self.dp_map:

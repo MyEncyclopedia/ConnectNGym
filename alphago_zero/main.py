@@ -9,38 +9,34 @@ import torch
 from ConnectNGym import ConnectNGym
 from PyGameConnectN import PyGameBoard
 from agent import play
+from alphago_zero import MCTSNode
 from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer
 from alphago_zero.MCTSRolloutPlayer import MCTSRolloutPlayer
 from alphago_zero.PolicyValueNetwork import PolicyValueNet, convert_game_state
-from ConnectNGame import ConnectNGame
+from ConnectNGame import ConnectNGame, GameResult
 import numpy as np
 
 
-def get_rotated_status(play_data: list):
+def get_rotated_status(play_data: List):
     """augment the data set by rotation and flipping
     play_data: [(state, mcts_prob, winner_z), ..., ...]
     """
     extend_data = []
-    for state, mcts_porb, winner in play_data:
+    for state, mcts_prob, winner in play_data:
         for i in [1, 2, 3, 4]:
             # rotate counterclockwise
             equi_state = np.array([np.rot90(s, i) for s in state])
-            equi_mcts_prob = np.rot90(np.flipud(
-                mcts_porb.reshape((state.shape[1], state.shape[1]))), i)
-            extend_data.append((equi_state,
-                                np.flipud(equi_mcts_prob).flatten(),
-                                winner))
+            equi_mcts_prob = np.rot90(np.flipud(mcts_prob.reshape((state.shape[1], state.shape[1]))), i)
+            extend_data.append((equi_state, np.flipud(equi_mcts_prob).flatten(), winner))
             # flip horizontally
             equi_state = np.array([np.fliplr(s) for s in equi_state])
             equi_mcts_prob = np.fliplr(equi_mcts_prob)
-            extend_data.append((equi_state,
-                                np.flipud(equi_mcts_prob).flatten(),
-                                winner))
+            extend_data.append((equi_state, np.flipud(equi_mcts_prob).flatten(), winner))
     return extend_data
 
 
-def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard, temperature, show_gui=False) \
-        -> Tuple[int, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
+def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard, show_gui=False) \
+        -> Tuple[GameResult, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
     """
 
     :param player:
@@ -54,11 +50,11 @@ def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard,
     and store the self-play data: (state, mcts_probs, z) for training
     """
 
-    states: list[np.ndarray] = []
-    mcts_probs: list[np.ndarray] = []
-    current_players: list[int] = []
+    states: List[np.ndarray] = []
+    mcts_probs: List[np.ndarray] = []
+    current_players: List[int] = []
     while True:
-        move, move_probs = player.train_get_next_action(pygame_board, temperature=temperature)
+        move, move_probs = player.train_get_next_action(pygame_board, temperature=args.temperature)
         # store the data
         states.append(convert_game_state(pygame_board.connect_n_game))
         mcts_probs.append(move_probs)
@@ -71,13 +67,13 @@ def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard,
         if end:
             # winner from the perspective of the current player of each state
             winners_z = np.zeros(len(current_players))
-            if winner != -1:
+            if winner != ConnectNGame.RESULT_TIE:
                 winners_z[np.array(current_players) == winner] = 1.0
                 winners_z[np.array(current_players) != winner] = -1.0
             # reset MCTS root node
             # player.resetPlayer()
             if show_gui:
-                if winner != -1:
+                if winner != ConnectNGame.RESULT_TIE:
                     print("Game end. Winner is player:", winner)
                 else:
                     print("Game end. Tie")
@@ -91,16 +87,9 @@ def update_policy(mini_batch, policy_value_net, args):
     winner_batch = [data[2] for data in mini_batch]
     old_probs, old_v = policy_value_net.policy_value(state_batch)
     for i in range(args.epochs):
-        loss, entropy = policy_value_net.train_step(
-            state_batch,
-            mcts_probs_batch,
-            winner_batch,
-            args.learning_rate * args.lr_multiplier)
+        loss, entropy = policy_value_net.train_step(state_batch, mcts_probs_batch, winner_batch, args.learning_rate * args.lr_multiplier)
         new_probs, new_v = policy_value_net.policy_value(state_batch)
-        kl = np.mean(np.sum(old_probs * (
-                np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)),
-                            axis=1)
-                     )
+        kl = np.mean(np.sum(old_probs * (np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)), axis=1))
         if kl > args.kl_targ * 4:  # early stopping if D_KL diverges badly
             break
     # adaptively adjust the learning rate
@@ -111,82 +100,67 @@ def update_policy(mini_batch, policy_value_net, args):
 
     explained_var_old = (1 - np.var(np.array(winner_batch) - old_v.flatten()) / np.var(np.array(winner_batch)))
     explained_var_new = (1 - np.var(np.array(winner_batch) - new_v.flatten()) / np.var(np.array(winner_batch)))
-    print(("kl:{:.5f},"
-           "lr_multiplier:{:.3f},"
-           "loss:{},"
-           "entropy:{},"
-           "explained_var_old:{:.3f},"
-           "explained_var_new:{:.3f}"
-           ).format(kl,
-                    args.lr_multiplier,
-                    loss,
-                    entropy,
-                    explained_var_old,
-                    explained_var_new))
+    print('kl:{:.5f}, lr_multiplier:{:.3f}, loss:{}, entropy:{}, explained_var_old:{:.3f}, explained_var_new:{:.3f}'
+          .format(kl, args.lr_multiplier, loss, entropy, explained_var_old, explained_var_new))
     return loss, entropy
 
 
-def policy_evaluate(self, n_games=10):
+def policy_evaluate(policy_value_net, n_games=10):
     """
     Evaluate the trained policy by playing against the pure MCTS player
     Note: this is only for monitoring the progress of training
     """
-    alphago_zero_player = MCTSAlphaGoZeroPlayer(self.policy_value_net, c_puct=self.c_puct, playout_num=args.playout_num)
-    mcts_rollout_player = MCTSRolloutPlayer(c_puct=5, playout_num=args.rollout_playout_num)
-    win_cnt = defaultdict(int)
-    board = PyGameBoard(connect_n_game=ConnectNGame(board_size=3, n=3))
+    initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
+    alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
+    mcts_rollout_player = MCTSRolloutPlayer(initial_state=initial_game, playout_num=args.rollout_playout_num)
+    win_counts = defaultdict(int)
+    board = PyGameBoard(connect_n_game=copy.deepcopy(initial_game))
     env = ConnectNGym(board)
     for i in range(n_games):
         winner = play(env, alphago_zero_player, mcts_rollout_player, render=True)
-        win_cnt[winner] += 1
-    win_ratio = 1.0*(win_cnt[1] + 0.5*win_cnt[-1]) / n_games
-    print("num_playouts:{}, win: {}, lose: {}, tie:{}".format( self.pure_mcts_playout_num, win_cnt[1], win_cnt[2], win_cnt[-1]))
+        win_counts[winner] += 1
+    win_ratio = 1.0*(win_counts[1] + 0.5*win_counts[-1]) / n_games
+    print(f'num_playouts:{args.rollout_playout_num}, win: {win_counts[1]}, lose: {win_counts[2]}, tie:{win_counts[-1]}')
     return win_ratio
 
 def train(args):
     initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
-    # board = PyGameBoard(connectNGame=game)
-
     data_buffer = deque(maxlen=args.buffer_size)
 
     policy_value_net = PolicyValueNet(args.board_size, args.board_size)
-    alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, c_puct=args.c_puct, playout_num=args.playout_num)
-    alphago_zero_player.reset(initial_game)
+    alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
 
-    try:
-        for i in range(args.game_batch_num):
-            for b in range(args.play_batch_size):
-                game = copy.deepcopy(initial_game)
-                board = PyGameBoard(connect_n_game=game)
-                winner, play_data = self_play_one_game(alphago_zero_player, board, args.temperature)
-                alphago_zero_player.reset(initial_game)
-                play_data = list(play_data)[:]
-                # augment the data
-                play_data = get_rotated_status(play_data)
-                data_buffer.extend(play_data)
-                episode_len = len(play_data)
-                print(f'batch i:{i + 1}, episode_len:{episode_len}')
-                if len(data_buffer) > args.batch_size:
-                    mini_batch = random.sample(data_buffer, args.batch_size)
-                    loss, entropy = update_policy(mini_batch, policy_value_net, args)
-                # check the performance of the current model,
-                # and save the model params
-                if (i + 1) % args.check_freq == 0:
-                    print("current self-play batch: {}".format(i + 1))
-                    win_ratio = policy_evaluate()
-                    print(f'{win_ratio}')
-                # self.policy_value_net.save_model('./current_policy.model')
-                # if win_ratio > self.best_win_ratio:
-                #     print("New best policy!!!!!!!!")
-                #     self.best_win_ratio = win_ratio
-                #     # update the best_policy
-                #     self.policy_value_net.save_model('./best_policy.model')
-                #     if (self.best_win_ratio == 1.0 and
-                #             self.pure_mcts_playout_num < 5000):
-                #         self.pure_mcts_playout_num += 1000
-                #         self.best_win_ratio = 0.0
-    except KeyboardInterrupt:
-        print('\nquit')
+    best_win_ratio = 0.0
+
+    for i in range(args.game_batch_num):
+        for b in range(args.play_batch_size):
+            game = copy.deepcopy(initial_game)
+            board = PyGameBoard(connect_n_game=game)
+            winner, play_data = self_play_one_game(alphago_zero_player, board)
+            alphago_zero_player.reset()
+            play_data = list(play_data)[:]
+            # augment the data
+            play_data = get_rotated_status(play_data)
+            data_buffer.extend(play_data)
+            episode_len = len(play_data)
+            print(f'batch i:{i + 1}, episode_len:{episode_len}')
+            if len(data_buffer) > args.batch_size:
+                mini_batch = random.sample(data_buffer, args.batch_size)
+                loss, entropy = update_policy(mini_batch, policy_value_net, args)
+            # check the performance of the current model,
+            # and save the model params
+            if (i + 1) % args.check_freq == 0:
+                win_ratio = policy_evaluate(policy_value_net)
+                print(f'current self-play batch: {i+1}, win_ratio:{win_ratio}')
+                policy_value_net.save_model('./current_policy.model')
+                if win_ratio > best_win_ratio:
+                    print('New best policy!!!!!!!!')
+                    best_win_ratio = win_ratio
+                    # update the best_policy
+                    policy_value_net.save_model('./best_policy.model')
+                    if best_win_ratio == 1.0 and args.rollout_playout_num < 5000:
+                        args.rollout_playout_num += 1000
+                        best_win_ratio = 0.0
 
 
 if __name__ == "__main__":
@@ -208,7 +182,7 @@ if __name__ == "__main__":
     parser.add_argument("--play_batch_size", type=int, default=1)
     parser.add_argument("--epochs", type=int, default=5)  # num of train_steps for each update
     parser.add_argument("--kl_targ", type=float, default=0.02)
-    parser.add_argument("--check_freq", type=int, default=20)
+    parser.add_argument("--check_freq", type=int, default=6)
     parser.add_argument("--game_batch_num", type=int, default=1500)
     parser.add_argument("--best_win_ratio", type=float, default=0.0)
     # which is used as the opponent to evaluate the trained policy
@@ -221,4 +195,5 @@ if __name__ == "__main__":
     else:
         args.use_cuda = False
 
+    MCTSNode.c_puct = args.c_puct
     train(args)

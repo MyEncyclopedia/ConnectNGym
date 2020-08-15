@@ -21,7 +21,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
     """An implementation of Monte Carlo Tree Search."""
     status_2_node_map: ClassVar[Dict[GameStatus, TreeNode]] = {}  # gameStatus => TreeNode
 
-    def __init__(self, policy_value_net: PolicyValueNet, c_puct=5, playout_num=10000):
+    def __init__(self, policy_value_net: PolicyValueNet, initial_state: ConnectNGame, playout_num=10000):
         """
         policy_value_fn: a function that takes in a board state and outputs
             a list of (action, probability) tuples and also a score in [-1, 1]
@@ -31,10 +31,10 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
             converges to the maximum-value policy. A higher value means
             relying on the prior more.
         """
-        self._root = TreeNode(None, 1.0)
         self._policy_value_net = policy_value_net
-        self._c_puct = c_puct
         self._playout_num = playout_num
+        self._initial_state = initial_state
+        self.reset()
 
     def _playout(self, game: ConnectNGame):
         """Run a single playout from the root to the leaf, getting a value at
@@ -48,7 +48,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
             if node.is_leaf():
                 break
             # Greedily select next move.
-            action, node = node.select(self._c_puct)
+            action, node = node.select()
             game.move(action)
 
         # Evaluate the leaf using a network which outputs a list of
@@ -72,10 +72,9 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
             leaf_value = float(leaf_value)
 
         # Update value and visit count of nodes in this traversal.
-        # todo why
-        node.update_til_root(-leaf_value)
+        node.update_til_root(leaf_value)
 
-    def predict_one_step(self, game: ConnectNGame, temp=1e-3) -> Tuple[List[Pos], np.ndarray]:
+    def predict_one_step(self, game: ConnectNGame, temperature=1e-3) -> Tuple[List[Pos], np.ndarray]:
         """Run all playouts sequentially and return the available actions and
         their corresponding probabilities.
         state: the current game state
@@ -89,17 +88,17 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         current_node = MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()]
         act_visits = [(act, node._visit_num) for act, node in current_node._children.items()]
         acts, visits = zip(*act_visits)
-        actProbs = softmax(1.0 / temp * np.log(np.array(visits) + 1e-10))
+        act_probs = softmax(1.0 / temperature * np.log(np.array(visits) + 1e-10))
 
-        return acts, actProbs
+        return acts, act_probs
 
-    def reset(self, initial_state: ConnectNGame):
+    def reset(self):
         MCTSAlphaGoZeroPlayer.status_2_node_map = {}
         self._root = TreeNode(None, 1.0)
-        MCTSAlphaGoZeroPlayer.status_2_node_map[initial_state.get_status()] = self._root
+        MCTSAlphaGoZeroPlayer.status_2_node_map[self._initial_state.get_status()] = self._root
 
-    def get_action(self, game: PyGameBoard) -> Pos:
-        return self.train_get_next_action(game)[0]
+    def get_action(self, board: PyGameBoard) -> Pos:
+        return self.train_get_next_action(board)[0]
 
     def train_get_next_action(self, board: PyGameBoard, self_play=True, temperature=1e-3) -> Tuple[Pos, np.ndarray]:
         avail_pos = board.get_avail_pos()

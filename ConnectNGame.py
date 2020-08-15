@@ -5,8 +5,8 @@ from typing import NewType
 GameStatus = Tuple[Tuple[int, ...]]
 Move2D = Tuple[int, int]
 Pos = int
-GameAbsoluteResult = int # 1: A wins; 0: Tie; -1: B wins
-GameRelativeResult = int # 1: current player wins; 0: Tie; -1: opponent wins
+GameResult = int # 1: A wins; 0: Tie; -1: B wins
+# GameRelativeResult = int # 1: current player wins; 0: Tie; -1: opponent wins
 
 
 class ConnectNGame:
@@ -28,11 +28,11 @@ class ConnectNGame:
         self.remaining_pos_num = self.board_size * self.board_size
         self.action_stack = []
 
-    def move(self, pos: Pos) -> GameAbsoluteResult:
+    def move(self, pos: Pos) -> GameResult:
         r, c = pos // self.board_size, pos % self.board_size
         return self._move_2d(r, c)
 
-    def _move_2d(self, r: int, c: int) -> GameAbsoluteResult:
+    def _move_2d(self, r: int, c: int) -> GameResult:
         """
 
         :param r:

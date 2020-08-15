@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from functools import lru_cache
 from typing import Tuple
 
-from ConnectNGame import ConnectNGame, GameStatus, GameAbsoluteResult, Pos
+from ConnectNGame import ConnectNGame, GameStatus, GameResult, Pos
 
 
 class Strategy(ABC):
@@ -15,17 +15,17 @@ class Strategy(ABC):
         super().__init__()
 
     @abstractmethod
-    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Pos]:
+    def action(self, game: ConnectNGame) -> Tuple[GameResult, Pos]:
         pass
 
 
 class MinimaxStrategy(Strategy):
-    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Pos]:
+    def action(self, game: ConnectNGame) -> Tuple[GameResult, Pos]:
         self.game = copy.deepcopy(game)
         result, move = self.minimax()
         return result, move
 
-    def minimax(self) -> Tuple[GameAbsoluteResult, Pos]:
+    def minimax(self) -> Tuple[GameResult, Pos]:
         game = self.game
         best_move = None
         assert not game.game_over
@@ -60,13 +60,13 @@ class MinimaxStrategy(Strategy):
 
 
 class MinimaxDPStrategy(Strategy):
-    def action(self, game) -> Tuple[GameAbsoluteResult, Pos]:
+    def action(self, game) -> Tuple[GameResult, Pos]:
         self.game = game
         result, move = self.minimax_dp(self.game.get_status())
         return result, move
 
     @lru_cache(maxsize=None)
-    def minimax_dp(self, game_state: GameStatus) -> Tuple[GameAbsoluteResult, Pos]:
+    def minimax_dp(self, game_state: GameStatus) -> Tuple[GameResult, Pos]:
         game = self.game
         best_move = None
         assert not game.game_over
@@ -101,13 +101,13 @@ class MinimaxDPStrategy(Strategy):
 
 
 class AlphaBetaStrategy(Strategy):
-    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Pos]:
+    def action(self, game: ConnectNGame) -> Tuple[GameResult, Pos]:
         self.game = game
         result, move = self.alpha_beta(self.game.get_status(), -math.inf, math.inf)
         return result, move
 
     def alpha_beta(self, game_status: GameStatus, alpha: int=None, beta:int=None) \
-            -> Tuple[GameAbsoluteResult, Pos]:
+            -> Tuple[GameResult, Pos]:
         game = self.game
         best_move = None
         assert not game.game_over
@@ -144,14 +144,14 @@ class AlphaBetaStrategy(Strategy):
 
 
 class AlphaBetaDPStrategy(Strategy):
-    def action(self, game: ConnectNGame) -> Tuple[GameAbsoluteResult, Pos]:
+    def action(self, game: ConnectNGame) -> Tuple[GameResult, Pos]:
         self.game = game
         self.alpha_beta_stack = [(-math.inf, math.inf)]
         result, move = self.alpha_beta_dp(self.game.get_status())
         return result, move
 
     @lru_cache(maxsize=None)
-    def alpha_beta_dp(self, game_status: GameStatus) -> Tuple[GameAbsoluteResult, Pos]:
+    def alpha_beta_dp(self, game_status: GameStatus) -> Tuple[GameResult, Pos]:
         alpha, beta = self.alpha_beta_stack[-1]
         game = self.game
         best_move = None
