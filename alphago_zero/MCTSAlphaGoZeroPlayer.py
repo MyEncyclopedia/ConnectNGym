@@ -98,19 +98,19 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         MCTSAlphaGoZeroPlayer.status_2_node_map[self._initial_state.get_status()] = self._root
 
     def get_action(self, board: PyGameBoard) -> Pos:
-        return self.train_get_next_action(board)[0]
+        return self.train_get_next_action(copy.deepcopy(board.connect_n_game))[0]
 
-    def train_get_next_action(self, board: PyGameBoard, self_play=True, temperature=1e-3) -> Tuple[Pos, np.ndarray]:
-        avail_pos = board.get_avail_pos()
+    def train_get_next_action(self, game: ConnectNGame, self_play=True, temperature=1e-3) -> Tuple[Pos, np.ndarray]:
+        avail_pos = game.get_avail_pos()
         # the pi vector returned by MCTS as in the alphaGo Zero paper
-        move_probs = np.zeros(board.board_size * board.board_size)
+        move_probs = np.zeros(game.board_size * game.board_size)
         if len(avail_pos) > 0:
-            acts, probs = self.predict_one_step(board.connect_n_game, temperature)
+            acts, probs = self.predict_one_step(game, temperature)
             move_probs[list(acts)] = probs
             if self_play:
                 # add Dirichlet Noise for exploration (needed for self-play training)
                 move = np.random.choice(acts, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
-                assert move in board.connect_n_game.get_avail_pos()
+                assert move in game.get_avail_pos()
             else:
                 # with the default temp=1e-3, it is almost equivalent
                 # to choosing the move with the highest prob

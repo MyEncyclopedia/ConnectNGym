@@ -35,7 +35,7 @@ def get_rotated_status(play_data: List):
     return extend_data
 
 
-def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard, show_gui=False) \
+def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame) \
         -> Tuple[GameResult, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
     """
 
@@ -54,29 +54,27 @@ def self_play_one_game(player: MCTSAlphaGoZeroPlayer, pygame_board: PyGameBoard,
     mcts_probs: List[np.ndarray] = []
     current_players: List[int] = []
     while True:
-        move, move_probs = player.train_get_next_action(pygame_board, temperature=args.temperature)
+        move, move_probs = player.train_get_next_action(game, temperature=args.temperature)
         # store the data
-        states.append(convert_game_state(pygame_board.connect_n_game))
+        states.append(convert_game_state(game))
         mcts_probs.append(move_probs)
-        current_players.append(pygame_board.get_current_player())
+        current_players.append(game.current_player)
         # perform a move
-        pygame_board.move(move)
-        if show_gui:
-            pygame_board.display()
-        end, winner = pygame_board.connect_n_game.game_over, pygame_board.connect_n_game.game_result
+        game.move(move)
+        # if show_gui:
+        #     pygame_board.display()
+        end, winner = game.game_over, game.game_result
         if end:
             # winner from the perspective of the current player of each state
             winners_z = np.zeros(len(current_players))
             if winner != ConnectNGame.RESULT_TIE:
                 winners_z[np.array(current_players) == winner] = 1.0
                 winners_z[np.array(current_players) != winner] = -1.0
-            # reset MCTS root node
-            # player.resetPlayer()
-            if show_gui:
-                if winner != ConnectNGame.RESULT_TIE:
-                    print("Game end. Winner is player:", winner)
-                else:
-                    print("Game end. Tie")
+            # if show_gui:
+            #     if winner != ConnectNGame.RESULT_TIE:
+            #         print("Game end. Winner is player:", winner)
+            #     else:
+            #         print("Game end. Tie")
             return winner, list(zip(states, mcts_probs, winners_z))
 
 
@@ -112,10 +110,10 @@ def policy_evaluate(policy_value_net, n_games=10):
     """
     initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
     alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
-    mcts_rollout_player = MCTSRolloutPlayer(initial_state=initial_game, playout_num=args.rollout_playout_num)
+    mcts_rollout_player = MCTSRolloutPlayer(playout_num=args.rollout_playout_num)
     win_counts = defaultdict(int)
     board = PyGameBoard(connect_n_game=copy.deepcopy(initial_game))
-    env = ConnectNGym(board)
+    env = ConnectNGym(board, display_milli_sec=500)
     for i in range(n_games):
         winner = play(env, alphago_zero_player, mcts_rollout_player, render=True)
         win_counts[winner] += 1
@@ -135,8 +133,8 @@ def train(args):
     for i in range(args.game_batch_num):
         for b in range(args.play_batch_size):
             game = copy.deepcopy(initial_game)
-            board = PyGameBoard(connect_n_game=game)
-            winner, play_data = self_play_one_game(alphago_zero_player, board)
+            # board = PyGameBoard(connect_n_game=game)
+            winner, play_data = self_play_one_game(alphago_zero_player, game)
             alphago_zero_player.reset()
             play_data = list(play_data)[:]
             # augment the data

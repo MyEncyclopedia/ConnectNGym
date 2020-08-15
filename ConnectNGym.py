@@ -16,10 +16,10 @@ REWARD_NONE = None
 
 class ConnectNGym(gym.Env):
 
-    def __init__(self, board: PyGameBoard, is_gui=True, display_sec=2):
+    def __init__(self, board: PyGameBoard, is_gui=True, display_milli_sec=2000):
         self.pygame_board = board
         self.is_gui = is_gui
-        self.display_sec = display_sec
+        self.display_milli_sec = display_milli_sec
         self.action_space = spaces.Discrete(board.board_size * board.board_size)
         self.observation_space = spaces.Discrete(board.board_size * board.board_size)
         self.seed()
@@ -87,7 +87,7 @@ class ConnectNGym(gym.Env):
         """
         if not self.is_gui:
             self.pygame_board.connect_n_game.draw_text()
-            time.sleep(self.display_sec)
+            time.sleep(self.display_milli_sec / 1000)
         else:
-            self.pygame_board.display(sec=self.display_sec)
+            self.pygame_board.display(milli_sec=self.display_milli_sec)
 

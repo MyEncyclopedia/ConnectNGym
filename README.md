@@ -1,9 +1,10 @@
 1. updated blog list
-2. node.update_recurse (-value)
+2. args
 4. policy net
-5. train without pygame
+5. comments
 
 10. test ability
+11. trained model in gym
 
 
 # blog

@@ -14,9 +14,9 @@ from operator import itemgetter
 
 class MCTSRolloutPlayer(BaseAgent):
     """An implementation of Monte Carlo Tree Search."""
-    status_2_node_map: ClassVar[Dict[GameStatus, TreeNode]] = {}  # gameStatus => TreeNode
+    # status_2_node_map: ClassVar[Dict[GameStatus, TreeNode]] = {}  # gameStatus => TreeNode
 
-    def __init__(self, initial_state: ConnectNGame, playout_num=10000):
+    def __init__(self, playout_num=10000):
         """
         policy_value_fn: a function that takes in a board state and outputs
             a list of (action, probability) tuples and also a score in [-1, 1]
@@ -27,8 +27,6 @@ class MCTSRolloutPlayer(BaseAgent):
             relying on the prior more.
         """
         self._playout_num = playout_num
-        self._initial_state = initial_state
-        self.reset()
 
     def get_action(self, board: PyGameBoard) -> Pos:
         """Runs all playouts sequentially and returns the most visited action.
@@ -37,18 +35,18 @@ class MCTSRolloutPlayer(BaseAgent):
         Return: the selected action
         """
         game = copy.deepcopy(board.connect_n_game)
+        node = TreeNode(None, 1.0)
+
         for n in range(self._playout_num):
             game_copy = copy.deepcopy(game)
-            self._playout(game_copy)
-        current_node = MCTSRolloutPlayer.status_2_node_map[game.get_status()]
-        return max(current_node._children.items(), key=lambda act_node: act_node[1]._visit_num)[0]
+            self._playout(game_copy, node)
+        return max(node._children.items(), key=lambda act_node: act_node[1]._visit_num)[0]
 
-    def _playout(self, game: ConnectNGame):
+    def _playout(self, game: ConnectNGame, node: TreeNode):
         """Run a single playout from the root to the leaf, getting a value at
         the leaf and propagating it back through its parents.
         State is modified in-place, so a copy must be provided.
         """
-        node = MCTSRolloutPlayer.status_2_node_map[game.get_status()]
         while True:
             if node.is_leaf():
                 break
@@ -63,8 +61,8 @@ class MCTSRolloutPlayer(BaseAgent):
         # Check for end of game.
         end, winner = game.game_over, game.game_result
         if not end:
-            child_node = node.expand(action_and_probs)
-            MCTSRolloutPlayer.status_2_node_map[game.get_status()] = child_node
+            for action, prob in action_and_probs:
+                child_node = node.expand(action, prob)
 
         player = game.current_player
         result = self._rollout_simulate_to_end(game)
@@ -89,11 +87,6 @@ class MCTSRolloutPlayer(BaseAgent):
             max_action = max(action_probs, key=itemgetter(1))[0]
             game.move(max_action)
         return result
-
-    def reset(self):
-        MCTSRolloutPlayer.status_2_node_map = {}
-        self._root = TreeNode(None, 1.0)
-        MCTSRolloutPlayer.status_2_node_map[self._initial_state.get_status()] = self._root
 
     def rollout_policy_fn(self, game: ConnectNGame):
         """a coarse, fast version of policy_fn used in the rollout phase."""

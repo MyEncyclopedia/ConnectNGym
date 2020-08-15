@@ -40,14 +40,14 @@ class PyGameBoard:
             elif e.type == pygame.MOUSEBUTTONDOWN:
                 self._handle_user_input(e)
 
-    def display(self, sec=2):
-        tick_num = sec * 1000
-        while tick_num >= 0:
+    def display(self, milli_sec=2000):
+        # tick_num = sec * 1000
+        while milli_sec >= 0:
             pygame.event.get()
             self._render()
             passed = self.clock.tick(1)
             # print(tick_num)
-            tick_num -= passed
+            milli_sec -= passed
 
     # proxy methods
     def move(self, pos: Pos) -> int:
