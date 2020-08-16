@@ -63,21 +63,15 @@ def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame, temper
         current_players.append(game.current_player)
         # perform a move
         game.move(move)
-        # if show_gui:
-        #     pygame_board.display()
-        end, winner = game.game_over, game.game_result
+
+        end, result = game.game_over, game.game_result
         if end:
             # winner from the perspective of the current player of each state
             winners_z = np.zeros(len(current_players))
-            if winner != ConnectNGame.RESULT_TIE:
-                winners_z[np.array(current_players) == winner] = 1.0
-                winners_z[np.array(current_players) != winner] = -1.0
-            # if show_gui:
-            #     if winner != ConnectNGame.RESULT_TIE:
-            #         print("Game end. Winner is player:", winner)
-            #     else:
-            #         print("Game end. Tie")
-            return winner, list(zip(states, mcts_probs, winners_z))
+            if result != ConnectNGame.RESULT_TIE:
+                winners_z[np.array(current_players) == result] = 1.0
+                winners_z[np.array(current_players) != result] = -1.0
+            return result, list(zip(states, mcts_probs, winners_z))
 
 
 def update_policy(mini_batch, policy_value_net, args):
@@ -128,8 +122,7 @@ def train(args):
             if len(data_buffer) > args.batch_size:
                 mini_batch = random.sample(data_buffer, args.batch_size)
                 loss, entropy = update_policy(mini_batch, policy_value_net, args)
-            # check the performance of the current model,
-            # and save the model params
+            # check the performance of the current model,and save the model params
             if (i + 1) % args.check_freq == 0:
                 initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
                 alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
@@ -138,7 +131,7 @@ def train(args):
                 print(f'current self-play batch: {i+1}, win_ratio:{win_ratio}')
                 policy_value_net.save_model('./current_policy.model')
                 if win_ratio > best_win_ratio:
-                    print('New best policy!!!!!!!!')
+                    print(f'best policy {win_ratio}')
                     best_win_ratio = win_ratio
                     # update the best_policy
                     policy_value_net.save_model('./best_policy.model')
