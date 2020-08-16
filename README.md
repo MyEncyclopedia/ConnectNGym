@@ -1,3 +1,6 @@
+0. rollout player bug
+2 rollout compete
+
 1. updated blog list
 2. args
 4. policy net
