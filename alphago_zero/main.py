@@ -16,6 +16,8 @@ from alphago_zero.PolicyValueNetwork import PolicyValueNet, convert_game_state
 from ConnectNGame import ConnectNGame, GameResult
 import numpy as np
 
+from alphago_zero.temp_play import battle
+
 
 def get_rotated_status(play_data: List):
     """augment the data set by rotation and flipping
@@ -35,7 +37,7 @@ def get_rotated_status(play_data: List):
     return extend_data
 
 
-def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame) \
+def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame, temperature: float) \
         -> Tuple[GameResult, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
     """
 
@@ -54,7 +56,7 @@ def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame) \
     mcts_probs: List[np.ndarray] = []
     current_players: List[int] = []
     while True:
-        move, move_probs = player.train_get_next_action(game, temperature=args.temperature)
+        move, move_probs = player.train_get_next_action(game, temperature=temperature)
         # store the data
         states.append(convert_game_state(game))
         mcts_probs.append(move_probs)
@@ -103,24 +105,6 @@ def update_policy(mini_batch, policy_value_net, args):
     return loss, entropy
 
 
-def policy_evaluate(policy_value_net, n_games=10):
-    """
-    Evaluate the trained policy by playing against the pure MCTS player
-    Note: this is only for monitoring the progress of training
-    """
-    initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
-    alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
-    mcts_rollout_player = MCTSRolloutPlayer(playout_num=args.rollout_playout_num)
-    win_counts = defaultdict(int)
-    board = PyGameBoard(connect_n_game=copy.deepcopy(initial_game))
-    env = ConnectNGym(board, display_milli_sec=100)
-    for i in range(n_games):
-        winner = play(env, alphago_zero_player, mcts_rollout_player, render=True)
-        win_counts[winner] += 1
-    win_ratio = 1.0*(win_counts[1] + 0.5*win_counts[-1]) / n_games
-    print(f'num_playouts:{args.rollout_playout_num}, win: {win_counts[1]}, lose: {win_counts[2]}, tie:{win_counts[-1]}')
-    return win_ratio
-
 def train(args):
     initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
     data_buffer = deque(maxlen=args.buffer_size)
@@ -133,8 +117,7 @@ def train(args):
     for i in range(args.game_batch_num):
         for b in range(args.play_batch_size):
             game = copy.deepcopy(initial_game)
-            # board = PyGameBoard(connect_n_game=game)
-            winner, play_data = self_play_one_game(alphago_zero_player, game)
+            winner, play_data = self_play_one_game(alphago_zero_player, game, temperature=args.temperature)
             alphago_zero_player.reset()
             play_data = list(play_data)[:]
             # augment the data
@@ -148,7 +131,10 @@ def train(args):
             # check the performance of the current model,
             # and save the model params
             if (i + 1) % args.check_freq == 0:
-                win_ratio = policy_evaluate(policy_value_net)
+                initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
+                alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
+                mcts_rollout_player = MCTSRolloutPlayer(playout_num=args.rollout_playout_num)
+                win_ratio = battle(initial_game, alphago_zero_player, mcts_rollout_player)
                 print(f'current self-play batch: {i+1}, win_ratio:{win_ratio}')
                 policy_value_net.save_model('./current_policy.model')
                 if win_ratio > best_win_ratio:
@@ -160,9 +146,7 @@ def train(args):
                         args.rollout_playout_num += 1000
                         best_win_ratio = 0.0
 
-
-if __name__ == "__main__":
-    # Parse argument
+def parse_args():
     parser = argparse.ArgumentParser("ConnectN_AlphaGo_Zero")
 
     parser.add_argument("--gpu", type=int, default=0)
@@ -183,15 +167,16 @@ if __name__ == "__main__":
     parser.add_argument("--check_freq", type=int, default=6)
     parser.add_argument("--game_batch_num", type=int, default=1500)
     parser.add_argument("--best_win_ratio", type=float, default=0.0)
-    # which is used as the opponent to evaluate the trained policy
 
     args = parser.parse_args()
-
     if args.gpu >= 0 and torch.cuda.is_available():
         args.use_cuda = True
         torch.cuda.device(args.gpu)
     else:
         args.use_cuda = False
+    return args
 
+if __name__ == "__main__":
+    args = parse_args()
     MCTSNode.c_puct = args.c_puct
     train(args)
