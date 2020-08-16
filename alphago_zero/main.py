@@ -2,17 +2,18 @@ import argparse
 import copy
 import random
 from collections import deque, defaultdict
-from typing import Tuple, List
+from typing import Tuple, List, Any
 
 import torch
+from nptyping import NDArray
 
 from ConnectNGym import ConnectNGym
 from PyGameConnectN import PyGameBoard
 from agent import play
 from alphago_zero import MCTSNode
-from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer
+from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer, ActionProbs
 from alphago_zero.MCTSRolloutPlayer import MCTSRolloutPlayer
-from alphago_zero.PolicyValueNetwork import PolicyValueNet, convert_game_state
+from alphago_zero.PolicyValueNetwork import PolicyValueNet, convert_game_state, NetGameState
 from ConnectNGame import ConnectNGame, GameResult
 import numpy as np
 
@@ -38,7 +39,7 @@ def get_rotated_status(play_data: List):
 
 
 def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame, temperature: float) \
-        -> Tuple[GameResult, List[Tuple[np.ndarray, np.ndarray, np.float64]]]:
+        -> Tuple[GameResult, List[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]]]:
     """
 
     :param player:
@@ -52,9 +53,9 @@ def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame, temper
     and store the self-play data: (state, mcts_probs, z) for training
     """
 
-    states: List[np.ndarray] = []
-    mcts_probs: List[np.ndarray] = []
-    current_players: List[int] = []
+    states: List[NetGameState] = []
+    mcts_probs: List[ActionProbs] = []
+    current_players: List[float] = []
     while True:
         move, move_probs = player.train_get_next_action(game, temperature=temperature)
         # store the data
@@ -74,7 +75,7 @@ def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame, temper
             return result, list(zip(states, mcts_probs, winners_z))
 
 
-def update_policy(mini_batch, policy_value_net, args):
+def update_policy(mini_batch: List[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]], policy_value_net: PolicyValueNet, args):
     """update the policy-value net"""
     state_batch = [data[0] for data in mini_batch]
     mcts_probs_batch = [data[1] for data in mini_batch]
@@ -101,6 +102,7 @@ def update_policy(mini_batch, policy_value_net, args):
 
 def train(args):
     initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
+    data_buffer: deque[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]]
     data_buffer = deque(maxlen=args.buffer_size)
 
     policy_value_net = PolicyValueNet(args.board_size, args.board_size)
@@ -113,7 +115,6 @@ def train(args):
             game = copy.deepcopy(initial_game)
             winner, play_data = self_play_one_game(alphago_zero_player, game, temperature=args.temperature)
             alphago_zero_player.reset()
-            play_data = list(play_data)[:]
             # augment the data
             play_data = get_rotated_status(play_data)
             data_buffer.extend(play_data)

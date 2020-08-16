@@ -3,22 +3,22 @@
 An implementation of the policyValueNet in PyTorch
 
 """
-from typing import Tuple, List, Iterator
+from typing import Tuple, List, Iterator, Any
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+from nptyping import NDArray
 from torch.autograd import Variable
 import numpy as np
 
 from ConnectNGame import ConnectNGame, Pos
+from alphago_zero.MCTSAlphaGoZeroPlayer import MoveWithProb, ActionProbs
 
-# from typing import NewType
+NetGameState = NDArray[(4, Any, Any), np.int]
 
-MoveWithProb = Tuple[Pos, np.ndarray]
-
-def convert_game_state(state: ConnectNGame) -> np.ndarray:
+def convert_game_state(state: ConnectNGame) -> NetGameState:
     """return the board state from the perspective of the current player.
     state shape: 4*width*height
     """
@@ -39,11 +39,6 @@ def convert_game_state(state: ConnectNGame) -> np.ndarray:
         square_state[3][:, :] = 1.0  # indicate the colour to play
     return square_state[:, ::-1, :]
 
-def set_learning_rate(optimizer, lr):
-    """Sets the learning rate to the given value"""
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
-
 
 class Net(nn.Module):
     """policy-value network module"""
@@ -58,8 +53,7 @@ class Net(nn.Module):
         self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
         # action policy layers
         self.act_conv1 = nn.Conv2d(128, 4, kernel_size=1)
-        self.act_fc1 = nn.Linear(4*board_width*board_height,
-                                 board_width*board_height)
+        self.act_fc1 = nn.Linear(4*board_width*board_height, board_width*board_height)
         # state value layers
         self.val_conv1 = nn.Conv2d(128, 2, kernel_size=1)
         self.val_fc1 = nn.Linear(2*board_width*board_height, 64)
@@ -100,7 +94,7 @@ class PolicyValueNet:
             net_params = torch.load(model_file)
             self.policy_value_net.load_state_dict(net_params)
 
-    def policy_value(self, state_batch):
+    def policy_value(self, state_batch: List[NetGameState]):
         """
         input: a batch of states
         output: a batch of action probabilities and state values
@@ -116,27 +110,26 @@ class PolicyValueNet:
             act_probs = np.exp(log_act_probs.data.numpy())
             return act_probs, value.data.numpy()
 
-    def policy_value_fn(self, board: ConnectNGame) -> Tuple[Iterator[MoveWithProb], np.float]:
+    def policy_value_fn(self, board: ConnectNGame) -> Tuple[Iterator[MoveWithProb], torch.Tensor]:
         """
         input: board
         output: a list of (action, probability) tuples for each available
         action and the score of the board state
         """
         avail_pos_list = board.get_avail_pos()
-        current_state = np.ascontiguousarray(convert_game_state(board).reshape(
-                -1, 4, self.board_width, self.board_height))
+        game_state = convert_game_state(board)
+        current_state = np.ascontiguousarray(game_state.reshape(-1, 4, self.board_width, self.board_height))
         if self.use_gpu:
-            log_act_probs, value = self.policy_value_net(
-                    Variable(torch.from_numpy(current_state)).cuda().float())
-            posProbs = np.exp(log_act_probs.data.cpu().numpy().flatten())
+            log_act_probs, value = self.policy_value_net(Variable(torch.from_numpy(current_state)).cuda().float())
+            pos_probs = np.exp(log_act_probs.data.cpu().numpy().flatten())
         else:
-            log_act_probs, value = self.policy_value_net(
-                    Variable(torch.from_numpy(current_state)).float())
-            posProbs = np.exp(log_act_probs.data.numpy().flatten())
+            log_act_probs, value = self.policy_value_net(Variable(torch.from_numpy(current_state)).float())
+            pos_probs = np.exp(log_act_probs.data.numpy().flatten())
         value = value.data[0][0]
-        return zip(avail_pos_list, posProbs), value
+        return zip(avail_pos_list, pos_probs), value
 
-    def train_step(self, state_batch, mcts_probs, winner_batch, lr):
+    def train_step(self, state_batch: List[NetGameState], mcts_probs: List[ActionProbs],
+                   winner_batch: List[NDArray[(Any), np.float]], lr):
         """perform a training step"""
         # wrap in Variable
         if self.use_gpu:
@@ -151,7 +144,8 @@ class PolicyValueNet:
         # zero the parameter gradients
         self.optimizer.zero_grad()
         # set learning rate
-        set_learning_rate(self.optimizer, lr)
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = lr
 
         # forward
         log_act_probs, value = self.policy_value_net(state_batch)

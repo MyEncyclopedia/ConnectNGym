@@ -6,9 +6,11 @@ network to guide the tree search and evaluate the leaf nodes
 """
 
 from __future__ import annotations
-from typing import List, Tuple, Dict, Iterator, ClassVar
+from typing import List, Tuple, Dict, Iterator, ClassVar, Any
 import numpy as np
 import copy
+
+from nptyping import NDArray
 from scipy.special import softmax
 
 from PyGameConnectN import PyGameBoard
@@ -16,6 +18,9 @@ from alphago_zero.MCTSNode import TreeNode
 from alphago_zero.PolicyValueNetwork import PolicyValueNet
 from agent import BaseAgent
 from ConnectNGame import ConnectNGame, GameStatus, Pos
+
+ActionProbs = NDArray[(Any), np.float]
+MoveWithProb = Tuple[Pos, ActionProbs]
 
 class MCTSAlphaGoZeroPlayer(BaseAgent):
     """An implementation of Monte Carlo Tree Search."""
@@ -74,7 +79,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         # Update value and visit count of nodes in this traversal.
         node.update_til_root(leaf_value)
 
-    def predict_one_step(self, game: ConnectNGame, temperature=1e-3) -> Tuple[List[Pos], np.ndarray]:
+    def predict_one_step(self, game: ConnectNGame, temperature=1e-3) -> Tuple[List[Pos], ActionProbs]:
         """Run all playouts sequentially and return the available actions and
         their corresponding probabilities.
         state: the current game state
@@ -100,10 +105,10 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
     def get_action(self, board: PyGameBoard) -> Pos:
         return self.train_get_next_action(copy.deepcopy(board.connect_n_game))[0]
 
-    def train_get_next_action(self, game: ConnectNGame, self_play=True, temperature=1e-3) -> Tuple[Pos, np.ndarray]:
+    def train_get_next_action(self, game: ConnectNGame, self_play=True, temperature=1e-3) -> Tuple[MoveWithProb]:
         avail_pos = game.get_avail_pos()
         # the pi vector returned by MCTS as in the alphaGo Zero paper
-        move_probs = np.zeros(game.board_size * game.board_size)
+        move_probs: ActionProbs = np.zeros(game.board_size * game.board_size)
         if len(avail_pos) > 0:
             acts, probs = self.predict_one_step(game, temperature)
             move_probs[list(acts)] = probs
