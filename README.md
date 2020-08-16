@@ -1,5 +1,3 @@
-0. rollout player bug
-2 rollout compete
 
 1. updated blog list
 2. args
@@ -8,6 +6,8 @@
 
 10. test ability
 11. trained model in gym
+
+20. minimax strategy bug
 
 
 # blog

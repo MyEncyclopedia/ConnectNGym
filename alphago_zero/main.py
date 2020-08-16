@@ -16,8 +16,6 @@ from alphago_zero.PolicyValueNetwork import PolicyValueNet, convert_game_state
 from ConnectNGame import ConnectNGame, GameResult
 import numpy as np
 
-from alphago_zero.mcts_pure import MCTSPlayer
-
 
 def get_rotated_status(play_data: List):
     """augment the data set by rotation and flipping
@@ -113,7 +111,6 @@ def policy_evaluate(policy_value_net, n_games=10):
     initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
     alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
     mcts_rollout_player = MCTSRolloutPlayer(playout_num=args.rollout_playout_num)
-    # mcts_rollout_player = MCTSPlayer(c_puct=5, n_playout=args.rollout_playout_num)
     win_counts = defaultdict(int)
     board = PyGameBoard(connect_n_game=copy.deepcopy(initial_game))
     env = ConnectNGym(board, display_milli_sec=100)
@@ -150,7 +147,7 @@ def train(args):
                 loss, entropy = update_policy(mini_batch, policy_value_net, args)
             # check the performance of the current model,
             # and save the model params
-            if (i + 1 - 1) % args.check_freq == 0:
+            if (i + 1) % args.check_freq == 0:
                 win_ratio = policy_evaluate(policy_value_net)
                 print(f'current self-play batch: {i+1}, win_ratio:{win_ratio}')
                 policy_value_net.save_model('./current_policy.model')

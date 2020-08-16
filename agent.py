@@ -62,7 +62,8 @@ def play(env: ConnectNGym, agent1: BaseAgent, agent2: BaseAgent, render=True) ->
         agent = agents[agent_id]
         action = agent.get_action(board)
         _, reward, done, info = env.step(action)
-        env.render(render)
+        if render:
+            env.render()
 
         if done:
             print(f'result={reward}')
