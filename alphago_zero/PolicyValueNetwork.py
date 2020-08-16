@@ -14,8 +14,9 @@ from torch.autograd import Variable
 import numpy as np
 
 from ConnectNGame import ConnectNGame, Pos
-from alphago_zero.MCTSAlphaGoZeroPlayer import MoveWithProb, ActionProbs
 
+ActionProbs = NDArray[(Any), np.float]
+MoveWithProb = Tuple[Pos, ActionProbs]
 NetGameState = NDArray[(4, Any, Any), np.int]
 
 def convert_game_state(state: ConnectNGame) -> NetGameState:
@@ -78,7 +79,7 @@ class Net(nn.Module):
 
 class PolicyValueNet:
     """policy-value network """
-    def __init__(self, board_width, board_height, model_file=None, use_gpu=False):
+    def __init__(self, board_width: int, board_height: int, model_file=None, use_gpu=False):
         self.use_gpu = use_gpu
         self.board_width = board_width
         self.board_height = board_height
@@ -110,7 +111,7 @@ class PolicyValueNet:
             act_probs = np.exp(log_act_probs.data.numpy())
             return act_probs, value.data.numpy()
 
-    def policy_value_fn(self, board: ConnectNGame) -> Tuple[Iterator[MoveWithProb], torch.Tensor]:
+    def policy_value_fn(self, board: ConnectNGame) -> Tuple[Iterator[MoveWithProb], float]:
         """
         input: board
         output: a list of (action, probability) tuples for each available
@@ -125,7 +126,7 @@ class PolicyValueNet:
         else:
             log_act_probs, value = self.policy_value_net(Variable(torch.from_numpy(current_state)).float())
             pos_probs = np.exp(log_act_probs.data.numpy().flatten())
-        value = value.data[0][0]
+        value = float(value.data[0][0])
         return zip(avail_pos_list, pos_probs), value
 
     def train_step(self, state_batch: List[NetGameState], mcts_probs: List[ActionProbs],

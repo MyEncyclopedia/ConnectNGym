@@ -23,7 +23,7 @@ class TreeNode:
         self._u = 0
         self._P = prior_p
 
-    def expand(self, action: int, prob: np.ndarray) -> TreeNode:
+    def expand(self, action: int, prob: np.float) -> TreeNode:
         """Expand tree by creating new children.
         action_priors: a list of tuples of actions and their prior probability
             according to the policy function.
@@ -39,7 +39,7 @@ class TreeNode:
         """
         return max(self._children.items(), key=lambda act_node: act_node[1].get_node_ucb())
 
-    def update(self, leaf_value):
+    def update(self, leaf_value: float):
         """Update node values from leaf evaluation.
         leaf_value: the value of subtree evaluation from the current player's
             perspective.
@@ -49,7 +49,7 @@ class TreeNode:
         # Update Q, a running average of values for all visits.
         self._Q += 1.0 * (leaf_value - self._Q) / self._visit_num
 
-    def update_til_root(self, leaf_value):
+    def update_til_root(self, leaf_value: float):
         """Like a call to update(), but applied recursively for all ancestors.
         """
         # If it is not root, this node's parent should be updated first.

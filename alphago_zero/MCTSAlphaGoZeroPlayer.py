@@ -15,12 +15,10 @@ from scipy.special import softmax
 
 from PyGameConnectN import PyGameBoard
 from alphago_zero.MCTSNode import TreeNode
-from alphago_zero.PolicyValueNetwork import PolicyValueNet
+from alphago_zero.PolicyValueNetwork import PolicyValueNet, ActionProbs, MoveWithProb
 from agent import BaseAgent
 from ConnectNGame import ConnectNGame, GameStatus, Pos
 
-ActionProbs = NDArray[(Any), np.float]
-MoveWithProb = Tuple[Pos, ActionProbs]
 
 class MCTSAlphaGoZeroPlayer(BaseAgent):
     """An implementation of Monte Carlo Tree Search."""

@@ -1,22 +1,18 @@
 import argparse
 import copy
 import random
-from collections import deque, defaultdict
+from collections import deque
 from typing import Tuple, List, Any
 
+import numpy as np
 import torch
 from nptyping import NDArray
 
-from ConnectNGym import ConnectNGym
-from PyGameConnectN import PyGameBoard
-from agent import play
-from alphago_zero import MCTSNode
-from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer, ActionProbs
-from alphago_zero.MCTSRolloutPlayer import MCTSRolloutPlayer
-from alphago_zero.PolicyValueNetwork import PolicyValueNet, convert_game_state, NetGameState
 from ConnectNGame import ConnectNGame, GameResult
-import numpy as np
-
+from alphago_zero import MCTSNode
+from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer
+from alphago_zero.MCTSRolloutPlayer import MCTSRolloutPlayer
+from alphago_zero.PolicyValueNetwork import PolicyValueNet, convert_game_state, NetGameState, ActionProbs
 from alphago_zero.temp_play import battle
 
 

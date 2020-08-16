@@ -1,6 +1,8 @@
 1. updated blog list
+2. member variable
 4. policy net
 5. comments
+
 
 10. test ability
 11. trained model in gym
