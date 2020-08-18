@@ -17,13 +17,13 @@ def battle(initial_game: ConnectNGame, player_first, player_second, n_games=10):
     for i in range(n_games):
         winner = play(env, player_first, player_second, render=False)
         win_counts[winner] += 1
-    print(f'first: win: {win_counts[1]}, lose: {win_counts[2]}, tie:{win_counts[-1]}')
+    print(f'first: win: {win_counts[1]}, lose: {win_counts[-1]}, tie:{win_counts[0]}')
     for i in range(n_games):
         winner = play(env, player_second, player_first, render=False)
         win_counts[-winner] += 1
-    win_ratio = 1.0*(win_counts[1] + 0.5*win_counts[-1]) / n_games
+    win_ratio = 1.0*(win_counts[1] + 0.5*win_counts[0]) / n_games
     print(f'total {win_counts}')
-    print(f'second first: win: {win_counts[1]}, lose: {win_counts[2]}, tie:{win_counts[-1]}')
+    print(f'second first: win: {win_counts[1]}, lose: {win_counts[-1]}, tie:{win_counts[0]}')
 
     return win_ratio
 
