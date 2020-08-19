@@ -1,4 +1,5 @@
 import copy
+import json
 import math
 from typing import Tuple, List
 
@@ -109,8 +110,19 @@ class PlannedMinimaxStrategy(Strategy):
 
         return tuple([tuple(board[i]) for i in range(N)])
 
+    def save_state(self):
+        import pickle
+        with open('planned_minimax.pickle', 'wb') as handle:
+            pickle.dump(self.dp_map, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def load_state(self):
+        import pickle
+        with open('planned_minimax.pickle', 'rb') as handle:
+            self.dp_map = pickle.load(handle)
+
 
 if __name__ == '__main__':
-    connectNGame = ConnectNGame(n=3, board_size=3)
+    connectNGame = ConnectNGame(n=3, board_size=4)
 
     strategy = PlannedMinimaxStrategy(connectNGame)
+    strategy.save_state()
