@@ -53,18 +53,16 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
 
     def train_get_next_action(self, game: ConnectNGame, self_play=True, temperature=1e-3) -> Tuple[MoveWithProb]:
         avail_pos = game.get_avail_pos()
-        # the pi vector returned by MCTS as in the alphaGo Zero paper
         move_probs: ActionProbs = np.zeros(game.board_size * game.board_size)
         if len(avail_pos) > 0:
-            acts, probs = self._predict_one_step(game, temperature)
+            # the pi defined in AlphaGo Zero paper
+            acts, probs = self._next_step(game, temperature)
             move_probs[list(acts)] = probs
             if self_play:
-                # add Dirichlet Noise for exploration (needed for self-play training)
+                # add Dirichlet Noise for exploration
                 move = np.random.choice(acts, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
                 assert move in game.get_avail_pos()
             else:
-                # with the default temp=1e-3, it is almost equivalent
-                # to choosing the move with the highest prob
                 move = np.random.choice(acts, p=probs)
 
             return move, move_probs
@@ -78,6 +76,24 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         MCTSAlphaGoZeroPlayer.status_2_node_map = {}
         self._root = TreeNode(None, 1.0)
         MCTSAlphaGoZeroPlayer.status_2_node_map[self._initial_state.get_status()] = self._root
+
+    def _next_step(self, game: ConnectNGame, temperature=1e-3) -> Tuple[List[Pos], ActionProbs]:
+        """Run all playouts sequentially and return the available actions and
+        their corresponding probabilities.
+        state: the current game state
+        temp: temperature parameter in (0, 1] controls the level of exploration
+        """
+        for n in range(self._playout_num):
+            state_copy = copy.deepcopy(game)
+            self._playout(state_copy)
+
+        # calc the move probabilities based on visit counts at the root node
+        current_node = MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()]
+        act_visits = [(act, node._visit_num) for act, node in current_node._children.items()]
+        acts, visits = zip(*act_visits)
+        act_probs = softmax(1.0 / temperature * np.log(np.array(visits) + 1e-10))
+
+        return acts, act_probs
 
     def _playout(self, game: ConnectNGame):
         """Run a single playout from the root to the leaf, getting a value at
@@ -116,23 +132,4 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
 
         # Update value and visit count of nodes in this traversal.
         node.propagate_to_root(leaf_value)
-
-    def _predict_one_step(self, game: ConnectNGame, temperature=1e-3) -> Tuple[List[Pos], ActionProbs]:
-        """Run all playouts sequentially and return the available actions and
-        their corresponding probabilities.
-        state: the current game state
-        temp: temperature parameter in (0, 1] controls the level of exploration
-        """
-        for n in range(self._playout_num):
-            state_copy = copy.deepcopy(game)
-            self._playout(state_copy)
-
-        # calc the move probabilities based on visit counts at the root node
-        current_node = MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()]
-        act_visits = [(act, node._visit_num) for act, node in current_node._children.items()]
-        acts, visits = zip(*act_visits)
-        act_probs = softmax(1.0 / temperature * np.log(np.array(visits) + 1e-10))
-
-        return acts, act_probs
-
 
