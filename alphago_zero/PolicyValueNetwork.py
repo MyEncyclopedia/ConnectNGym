@@ -130,7 +130,7 @@ class PolicyValueNet:
         return zip(avail_pos_list, pos_probs), value
 
     def train_step(self, state_batch: List[NetGameState], mcts_probs: List[ActionProbs],
-                   winner_batch: List[NDArray[(Any), np.float]], lr):
+                   winner_batch: List[NDArray[(Any), np.float]], lr) -> Tuple[float, float]:
         """perform a training step"""
         # wrap in Variable
         if self.use_gpu:

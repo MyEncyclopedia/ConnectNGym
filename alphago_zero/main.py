@@ -54,14 +54,15 @@ def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame, temper
             return result, list(zip(states, mcts_probs, winners_z))
 
 
-def update_policy(mini_batch: List[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]], policy_value_net: PolicyValueNet, args):
+def update_policy(mini_batch: List[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]],
+                  policy_value_net: PolicyValueNet, args) -> Tuple[float, float]:
     """update the policy-value net"""
     state_batch = [data[0] for data in mini_batch]
-    mcts_probs_batch = [data[1] for data in mini_batch]
+    probs_batch = [data[1] for data in mini_batch]
     winner_batch = [data[2] for data in mini_batch]
     old_probs, old_v = policy_value_net.policy_value(state_batch)
     for i in range(args.epochs):
-        loss, entropy = policy_value_net.train_step(state_batch, mcts_probs_batch, winner_batch, args.learning_rate)
+        loss, entropy = policy_value_net.train_step(state_batch, probs_batch, winner_batch, args.learning_rate)
         new_probs, new_v = policy_value_net.policy_value(state_batch)
         kl = np.mean(np.sum(old_probs * (np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)), axis=1))
         if kl > args.kl_targ * 4:  # early stopping if D_KL diverges badly
@@ -75,7 +76,6 @@ def train(args):
     initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
     game_records: deque[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]]
     game_records = deque(maxlen=args.buffer_size)
-    loss_q = deque(maxlen=20)
 
     policy_value_net = PolicyValueNet(args.board_size, args.board_size, use_gpu=args.use_cuda)
     alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
@@ -88,14 +88,10 @@ def train(args):
         alphago_zero_player.reset()
         game_records.extend(one_game_records)
         episode_len = len(one_game_records)
-        logging.warning(f'batch i:{i + 1}, episode_len:{episode_len}, {len(game_records)}')
+        logging.warning(f'batch i:{i + 1}, episode_len:{episode_len}, records_len:{len(game_records)}')
         if len(game_records) > args.batch_size:
             mini_batch = random.sample(game_records, args.batch_size)
             loss, entropy = update_policy(mini_batch, policy_value_net, args)
-            loss_q.append(loss)
-            if len(loss_q) == loss_q.maxlen:
-                if all(loss_q[last_idx] < loss_q[0] for last_idx in range(-1, -6, -1)):
-                    args.learning_rate = 1e-2
 
         # check the performance of the current model,and save the model params
         if i % args.check_freq == 0:
@@ -135,7 +131,7 @@ def parse_args():
     parser.add_argument("--rollout_playout_num", type=int, default=900)  # num of simulations for each move
     parser.add_argument("--c_puct", type=int, default=5)
     parser.add_argument("--buffer_size", type=int, default=10000)
-    parser.add_argument("--batch_size", type=int, default=128)  # mini-batch size for training
+    parser.add_argument("--batch_size", type=int, default=64)  # mini-batch size for training
     parser.add_argument("--epochs", type=int, default=8)  # num of train_steps for each update
     parser.add_argument("--kl_targ", type=float, default=0.02)
     parser.add_argument("--check_freq", type=int, default=50)

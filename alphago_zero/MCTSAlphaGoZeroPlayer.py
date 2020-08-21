@@ -75,7 +75,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
             leaf_value = float(leaf_value)
 
         # Update value and visit count of nodes in this traversal.
-        node.update_til_root(leaf_value)
+        node.update_up_to_root(leaf_value)
 
     def predict_one_step(self, game: ConnectNGame, temperature=1e-3) -> Tuple[List[Pos], ActionProbs]:
         """Run all playouts sequentially and return the available actions and

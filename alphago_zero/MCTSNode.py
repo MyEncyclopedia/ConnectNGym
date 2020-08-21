@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-
 from typing import Tuple, Dict, ClassVar
-
 import numpy as np
-
 from ConnectNGame import Pos
 
 
@@ -51,12 +48,12 @@ class TreeNode:
         # Update Q, a running average of values for all visits.
         self._Q += 1.0 * (leaf_value - self._Q) / self._visit_num
 
-    def update_til_root(self, leaf_value: float):
+    def update_up_to_root(self, leaf_value: float):
         """Like a call to update(), but applied recursively for all ancestors.
         """
         # If it is not root, this node's parent should be updated first.
         if self._parent:
-            self._parent.update_til_root(-leaf_value)
+            self._parent.update_up_to_root(-leaf_value)
         self.update(leaf_value)
 
     def get_node_ucb(self) -> float:
