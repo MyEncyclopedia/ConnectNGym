@@ -11,6 +11,8 @@ from agent import BaseAgent
 from ConnectNGame import ConnectNGame, GameStatus, Pos, GameResult
 from operator import itemgetter
 
+from alphago_zero.PolicyValueNetwork import MoveWithProb
+
 
 class MCTSRolloutPlayer(BaseAgent):
     """An implementation of Monte Carlo Tree Search."""
@@ -88,14 +90,14 @@ class MCTSRolloutPlayer(BaseAgent):
             game.move(max_action)
         return result
 
-    def rollout_policy_fn(self, game: ConnectNGame):
+    def rollout_policy_fn(self, game: ConnectNGame) -> Iterator[MoveWithProb]:
         """a coarse, fast version of policy_fn used in the rollout phase."""
         # rollout randomly
         action_probs = np.random.rand(len(game.get_avail_pos()))
         return zip(game.get_avail_pos(), action_probs)
 
 
-    def rollout_policy_value_fn(self, game: ConnectNGame):
+    def rollout_policy_value_fn(self, game: ConnectNGame) -> Tuple[Iterator[MoveWithProb], float]:
         """a function that takes in a state and outputs a list of (action, probability)
         tuples and a score for the state"""
         # return uniform probabilities and 0 score for pure MCTS

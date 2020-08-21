@@ -6,6 +6,8 @@ from typing import Tuple, Dict, ClassVar
 
 import numpy as np
 
+from ConnectNGame import Pos
+
 
 class TreeNode:
     """A node in the MCTS tree.
@@ -32,7 +34,7 @@ class TreeNode:
         self._children[action] = child_node
         return child_node
 
-    def select(self) -> Tuple[int, TreeNode]:
+    def select(self) -> Tuple[Pos, TreeNode]:
         """Select action among children that gives maximum action value Q
         plus bonus u(P).
         Return: A tuple of (action, next_node)
