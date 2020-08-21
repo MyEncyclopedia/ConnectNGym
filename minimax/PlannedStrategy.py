@@ -12,8 +12,8 @@ class PlannedMinimaxStrategy(Strategy):
         super().__init__()
         self.game = copy.deepcopy(game)
         self.dp_map = {}  # game_status => result, move
-        self.result = self.minimax(game.get_status())
-        print(f'best result: {self.result}')
+        # self.result = self.minimax(game.get_status())
+        # print(f'best result: {self.result}')
 
     def action(self, game: ConnectNGame) -> Tuple[GameResult, Pos]:
         game = copy.deepcopy(game)
@@ -34,7 +34,7 @@ class PlannedMinimaxStrategy(Strategy):
                 best_result = min(best_result, result)
             # update best_move if any improvement
             best_move = move if best_result == result else best_move
-            print(f'move {move} => {result}')
+            # print(f'move {move} => {result}')
 
         # if best_result == game.currentPlayer:
         #     return best_result, move
@@ -122,7 +122,9 @@ class PlannedMinimaxStrategy(Strategy):
 
 
 if __name__ == '__main__':
-    connectNGame = ConnectNGame(n=3, board_size=4)
+    connect_n_game = ConnectNGame(n=3, board_size=4)
 
-    strategy = PlannedMinimaxStrategy(connectNGame)
-    strategy.save_state()
+    strategy = PlannedMinimaxStrategy(connect_n_game)
+    # strategy.save_state()
+    strategy.load_state()
+    print(strategy.action(connect_n_game))

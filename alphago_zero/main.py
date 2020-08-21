@@ -1,5 +1,6 @@
 import argparse
 import copy
+import logging
 import random
 from collections import deque
 from typing import Tuple, List, Any
@@ -14,24 +15,6 @@ from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer
 from alphago_zero.MCTSRolloutPlayer import MCTSRolloutPlayer
 from alphago_zero.PolicyValueNetwork import PolicyValueNet, convert_game_state, NetGameState, ActionProbs
 from alphago_zero.temp_play import battle
-
-
-def get_rotated_status(play_data: List):
-    """augment the data set by rotation and flipping
-    play_data: [(state, mcts_prob, winner_z), ..., ...]
-    """
-    extend_data = []
-    for state, mcts_prob, winner in play_data:
-        for i in [1, 2, 3, 4]:
-            # rotate counterclockwise
-            equi_state = np.array([np.rot90(s, i) for s in state])
-            equi_mcts_prob = np.rot90(np.flipud(mcts_prob.reshape((state.shape[1], state.shape[1]))), i)
-            extend_data.append((equi_state, np.flipud(equi_mcts_prob).flatten(), winner))
-            # flip horizontally
-            equi_state = np.array([np.fliplr(s) for s in equi_state])
-            equi_mcts_prob = np.fliplr(equi_mcts_prob)
-            extend_data.append((equi_state, np.flipud(equi_mcts_prob).flatten(), winner))
-    return extend_data
 
 
 def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame, temperature: float) \
@@ -78,84 +61,90 @@ def update_policy(mini_batch: List[Tuple[NetGameState, ActionProbs, NDArray[(Any
     winner_batch = [data[2] for data in mini_batch]
     old_probs, old_v = policy_value_net.policy_value(state_batch)
     for i in range(args.epochs):
-        loss, entropy = policy_value_net.train_step(state_batch, mcts_probs_batch, winner_batch, args.learning_rate * args.lr_multiplier)
+        loss, entropy = policy_value_net.train_step(state_batch, mcts_probs_batch, winner_batch, args.learning_rate)
         new_probs, new_v = policy_value_net.policy_value(state_batch)
         kl = np.mean(np.sum(old_probs * (np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)), axis=1))
         if kl > args.kl_targ * 4:  # early stopping if D_KL diverges badly
             break
-    # adaptively adjust the learning rate
-    if kl > args.kl_targ * 2 and args.lr_multiplier > 0.1:
-        args.lr_multiplier /= 1.5
-    elif kl < args.kl_targ / 2 and args.lr_multiplier < 10:
-        args.lr_multiplier *= 1.5
 
     explained_var_old = (1 - np.var(np.array(winner_batch) - old_v.flatten()) / np.var(np.array(winner_batch)))
     explained_var_new = (1 - np.var(np.array(winner_batch) - new_v.flatten()) / np.var(np.array(winner_batch)))
-    print('kl:{:.5f}, lr_multiplier:{:.3f}, loss:{}, entropy:{}, explained_var_old:{:.3f}, explained_var_new:{:.3f}'
-          .format(kl, args.lr_multiplier, loss, entropy, explained_var_old, explained_var_new))
+    logging.warning(f'kl:{kl:.5f}, loss:{loss}, entropy:{entropy}, explained_var_old:{explained_var_old:.3f}, explained_var_new:{explained_var_new:.3f}')
     return loss, entropy
 
 
 def train(args):
     initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
-    data_buffer: deque[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]]
-    data_buffer = deque(maxlen=args.buffer_size)
+    game_records: deque[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]]
+    game_records = deque(maxlen=args.buffer_size)
+    loss_q = deque(maxlen=20)
 
-    policy_value_net = PolicyValueNet(args.board_size, args.board_size)
+    policy_value_net = PolicyValueNet(args.board_size, args.board_size, use_gpu=args.use_cuda)
     alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
 
     best_win_ratio = 0.0
 
     for i in range(args.game_batch_num):
+        # todo remove it
         for b in range(args.play_batch_size):
             game = copy.deepcopy(initial_game)
-            winner, play_data = self_play_one_game(alphago_zero_player, game, temperature=args.temperature)
+            winner, one_game_records = self_play_one_game(alphago_zero_player, game, temperature=args.temperature)
             alphago_zero_player.reset()
-            # augment the data
-            play_data = get_rotated_status(play_data)
-            data_buffer.extend(play_data)
-            episode_len = len(play_data)
-            print(f'batch i:{i + 1}, episode_len:{episode_len}')
-            if len(data_buffer) > args.batch_size:
-                mini_batch = random.sample(data_buffer, args.batch_size)
+            game_records.extend(one_game_records)
+            episode_len = len(one_game_records)
+            logging.warning(f'batch i:{i + 1}, episode_len:{episode_len}, {len(game_records)}')
+            if len(game_records) > args.batch_size:
+                mini_batch = random.sample(game_records, args.batch_size)
                 loss, entropy = update_policy(mini_batch, policy_value_net, args)
+                loss_q.append(loss)
+                if len(loss_q) == loss_q.maxlen:
+                    if all(loss_q[last_idx] < loss_q[0] for last_idx in range(-1, -6, -1)):
+                        args.learning_rate = 1e-2
+
             # check the performance of the current model,and save the model params
-            if (i + 1) % args.check_freq == 0:
+            if i % args.check_freq == 0:
                 initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
                 alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
                 mcts_rollout_player = MCTSRolloutPlayer(playout_num=args.rollout_playout_num)
-                win_ratio = battle(initial_game, alphago_zero_player, mcts_rollout_player)
-                print(f'current self-play batch: {i+1}, win_ratio:{win_ratio}')
+                win_ratio = battle(initial_game, alphago_zero_player, mcts_rollout_player, n_games=20)
+                logging.warning(f'current self-play batch: {i+1}, win_ratio:{win_ratio}')
                 policy_value_net.save_model('./current_policy.model')
                 if win_ratio > best_win_ratio:
-                    print(f'best policy {win_ratio}')
+                    logging.warning(f'best policy {win_ratio}')
                     best_win_ratio = win_ratio
                     # update the best_policy
                     policy_value_net.save_model('./best_policy.model')
-                    if best_win_ratio == 1.0 and args.rollout_playout_num < 5000:
-                        args.rollout_playout_num += 1000
-                        best_win_ratio = 0.0
+                    # if best_win_ratio == 1.0 and args.rollout_playout_num < 5000:
+                    #     args.rollout_playout_num += 1000
+                    #     best_win_ratio = 0.0
+
+def logging_config():
+    import logging.config
+    import yaml
+    with open('../logging_config.yaml', 'r') as f:
+        config = yaml.safe_load(f.read())
+        logging.config.dictConfig(config)
+
 
 def parse_args():
     parser = argparse.ArgumentParser("ConnectN_AlphaGo_Zero")
 
     parser.add_argument("--gpu", type=int, default=0)
-    parser.add_argument("--board_size", type=int, default=4)
+    parser.add_argument("--board_size", type=int, default=6)
     parser.add_argument("--n_in_row", type=int, default=3)
     # training params
     parser.add_argument("--learning_rate", type=float, default=2e-3)
-    parser.add_argument("--lr_multiplier", type=float, default=1.0)  # adaptively adjust the learning rate based on KL
     parser.add_argument("--temperature", type=float, default=1.0)  # the temperature param
-    parser.add_argument("--playout_num", type=int, default=400)  # num of simulations for each move
-    parser.add_argument("--rollout_playout_num", type=int, default=1000)  # num of simulations for each move
+    parser.add_argument("--playout_num", type=int, default=1000)  # num of simulations for each move
+    parser.add_argument("--rollout_playout_num", type=int, default=900)  # num of simulations for each move
     parser.add_argument("--c_puct", type=int, default=5)
     parser.add_argument("--buffer_size", type=int, default=10000)
-    parser.add_argument("--batch_size", type=int, default=256)  # mini-batch size for training
+    parser.add_argument("--batch_size", type=int, default=512)  # mini-batch size for training
     parser.add_argument("--play_batch_size", type=int, default=1)
-    parser.add_argument("--epochs", type=int, default=5)  # num of train_steps for each update
+    parser.add_argument("--epochs", type=int, default=8)  # num of train_steps for each update
     parser.add_argument("--kl_targ", type=float, default=0.02)
-    parser.add_argument("--check_freq", type=int, default=6)
-    parser.add_argument("--game_batch_num", type=int, default=1500)
+    parser.add_argument("--check_freq", type=int, default=50)
+    parser.add_argument("--game_batch_num", type=int, default=3000)
     parser.add_argument("--best_win_ratio", type=float, default=0.0)
 
     args = parser.parse_args()
@@ -167,6 +156,7 @@ def parse_args():
     return args
 
 if __name__ == "__main__":
+    logging_config()
     args = parse_args()
     MCTSNode.c_puct = args.c_puct
     train(args)
