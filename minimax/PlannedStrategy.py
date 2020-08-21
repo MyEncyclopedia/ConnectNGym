@@ -112,12 +112,12 @@ class PlannedMinimaxStrategy(Strategy):
 
     def save_state(self):
         import pickle
-        with open('planned_minimax.pickle', 'wb') as handle:
+        with open(f'planned_minimax_{self.game.n}_{self.game.board_size}.pickle', 'wb') as handle:
             pickle.dump(self.dp_map, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def load_state(self):
         import pickle
-        with open('planned_minimax.pickle', 'rb') as handle:
+        with open(f'planned_minimax_{self.game.n}_{self.game.board_size}.pickle', 'rb') as handle:
             self.dp_map = pickle.load(handle)
 
 
