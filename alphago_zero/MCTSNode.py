@@ -11,7 +11,9 @@ class TreeNode:
     MCTS Tree Node
     """
 
-    c_puct: ClassVar[int] = 5  # class-wise global param c_puct
+    c_puct: ClassVar[int] = 5  # class-wise global param c_puct.
+    # todo
+    # Its value ranges in (0, inf), controlling how quickly exploration converges to the maximum-value policy. A higher value means relying on the prior more.
 
     _parent: TreeNode
     _children: Dict[int, TreeNode]  # map from action to TreeNode

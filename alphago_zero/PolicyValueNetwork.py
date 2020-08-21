@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-An implementation of the policyValueNet in PyTorch
-
-"""
 from typing import Tuple, List, Iterator, Any
 
 import torch

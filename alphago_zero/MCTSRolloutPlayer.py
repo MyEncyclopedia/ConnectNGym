@@ -18,7 +18,7 @@ class MCTSRolloutPlayer(BaseAgent):
     """An implementation of Monte Carlo Tree Search."""
     # status_2_node_map: ClassVar[Dict[GameStatus, TreeNode]] = {}  # gameStatus => TreeNode
 
-    def __init__(self, playout_num=10000):
+    def __init__(self, playout_num=1000):
         """
         policy_value_fn: a function that takes in a board state and outputs
             a list of (action, probability) tuples and also a score in [-1, 1]

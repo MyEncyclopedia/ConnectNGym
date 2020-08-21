@@ -21,23 +21,63 @@ from ConnectNGame import ConnectNGame, GameStatus, Pos
 
 
 class MCTSAlphaGoZeroPlayer(BaseAgent):
-    """An implementation of Monte Carlo Tree Search."""
-    status_2_node_map: ClassVar[Dict[GameStatus, TreeNode]] = {}  # gameStatus => TreeNode
+    """
+    AlphaGo Zero version of MCTS.
+    """
 
-    def __init__(self, policy_value_net: PolicyValueNet, initial_state: ConnectNGame, playout_num=10000):
-        """
-        policy_value_fn: a function that takes in a board state and outputs
-            a list of (action, probability) tuples and also a score in [-1, 1]
-            (i.e. the expected value of the end game score from the current
-            player's perspective) for the current player.
-        c_puct: a number in (0, inf) that controls how quickly exploration
-            converges to the maximum-value policy. A higher value means
-            relying on the prior more.
-        """
+    # Keeping track of all nodes in MCTS tree currently constructed.
+    # It is emptied after reset() is called.
+    status_2_node_map: ClassVar[Dict[GameStatus, TreeNode]] = {}  # GameStatus => TreeNode
+
+    _policy_value_net: PolicyValueNet
+    _playout_num: int
+    _root: TreeNode
+    _initial_state: ConnectNGame  # used in reset() to construct root node.
+
+    def __init__(self, policy_value_net: PolicyValueNet, initial_state: ConnectNGame, playout_num=1000):
         self._policy_value_net = policy_value_net
         self._playout_num = playout_num
         self._initial_state = initial_state
+        self._root = None
+
         self.reset()
+
+    def get_action(self, board: PyGameBoard) -> Pos:
+        """
+        Overridden method defined in BaseAgent.
+
+        :param board:
+        :return:
+        """
+        return self.train_get_next_action(copy.deepcopy(board.connect_n_game))[0]
+
+    def train_get_next_action(self, game: ConnectNGame, self_play=True, temperature=1e-3) -> Tuple[MoveWithProb]:
+        avail_pos = game.get_avail_pos()
+        # the pi vector returned by MCTS as in the alphaGo Zero paper
+        move_probs: ActionProbs = np.zeros(game.board_size * game.board_size)
+        if len(avail_pos) > 0:
+            acts, probs = self._predict_one_step(game, temperature)
+            move_probs[list(acts)] = probs
+            if self_play:
+                # add Dirichlet Noise for exploration (needed for self-play training)
+                move = np.random.choice(acts, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
+                assert move in game.get_avail_pos()
+            else:
+                # with the default temp=1e-3, it is almost equivalent
+                # to choosing the move with the highest prob
+                move = np.random.choice(acts, p=probs)
+
+            return move, move_probs
+        else:
+            raise Exception('No actions')
+
+    def reset(self):
+        """
+        Releases all nodes in MCTS tree and resets root node.
+        """
+        MCTSAlphaGoZeroPlayer.status_2_node_map = {}
+        self._root = TreeNode(None, 1.0)
+        MCTSAlphaGoZeroPlayer.status_2_node_map[self._initial_state.get_status()] = self._root
 
     def _playout(self, game: ConnectNGame):
         """Run a single playout from the root to the leaf, getting a value at
@@ -77,7 +117,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         # Update value and visit count of nodes in this traversal.
         node.propagate_to_root(leaf_value)
 
-    def predict_one_step(self, game: ConnectNGame, temperature=1e-3) -> Tuple[List[Pos], ActionProbs]:
+    def _predict_one_step(self, game: ConnectNGame, temperature=1e-3) -> Tuple[List[Pos], ActionProbs]:
         """Run all playouts sequentially and return the available actions and
         their corresponding probabilities.
         state: the current game state
@@ -95,30 +135,4 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
 
         return acts, act_probs
 
-    def reset(self):
-        MCTSAlphaGoZeroPlayer.status_2_node_map = {}
-        self._root = TreeNode(None, 1.0)
-        MCTSAlphaGoZeroPlayer.status_2_node_map[self._initial_state.get_status()] = self._root
 
-    def get_action(self, board: PyGameBoard) -> Pos:
-        return self.train_get_next_action(copy.deepcopy(board.connect_n_game))[0]
-
-    def train_get_next_action(self, game: ConnectNGame, self_play=True, temperature=1e-3) -> Tuple[MoveWithProb]:
-        avail_pos = game.get_avail_pos()
-        # the pi vector returned by MCTS as in the alphaGo Zero paper
-        move_probs: ActionProbs = np.zeros(game.board_size * game.board_size)
-        if len(avail_pos) > 0:
-            acts, probs = self.predict_one_step(game, temperature)
-            move_probs[list(acts)] = probs
-            if self_play:
-                # add Dirichlet Noise for exploration (needed for self-play training)
-                move = np.random.choice(acts, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
-                assert move in game.get_avail_pos()
-            else:
-                # with the default temp=1e-3, it is almost equivalent
-                # to choosing the move with the highest prob
-                move = np.random.choice(acts, p=probs)
-
-            return move, move_probs
-        else:
-            raise Exception('No actions')
