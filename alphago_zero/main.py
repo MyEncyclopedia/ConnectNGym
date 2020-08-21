@@ -14,7 +14,7 @@ from alphago_zero import MCTSNode
 from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer
 from alphago_zero.MCTSRolloutPlayer import MCTSRolloutPlayer
 from alphago_zero.PolicyValueNetwork import PolicyValueNet, convert_game_state, NetGameState, ActionProbs
-from alphago_zero.temp_play import battle
+from alphago_zero.battle import battle
 
 
 def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame, temperature: float) \

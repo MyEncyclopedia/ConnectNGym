@@ -46,7 +46,7 @@ class TreeNode:
         # Count visit.
         self._visit_num += 1
         # Update Q, a running average of values for all visits.
-        self._Q += 1.0 * (leaf_value - self._Q) / self._visit_num
+        self._Q += 0.2 * (leaf_value - self._Q)
 
     def update_up_to_root(self, leaf_value: float):
         """Like a call to update(), but applied recursively for all ancestors.

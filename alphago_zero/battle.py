@@ -7,7 +7,6 @@ from ConnectNGym import ConnectNGym
 from PyGameConnectN import PyGameBoard
 from agent import play, AIAgent
 from alphago_zero.MCTSRolloutPlayer import MCTSRolloutPlayer
-from alphago_zero.mcts_pure import MCTSPlayer
 from minimax.PlannedStrategy import PlannedMinimaxStrategy
 
 
@@ -27,12 +26,6 @@ def battle(initial_game: ConnectNGame, player_first, player_second, n_games=10):
     # logging.warning(f'second first: win: {win_counts[1]}, lose: {win_counts[-1]}, tie:{win_counts[0]}')
 
     return win_ratio
-
-def mcts_play():
-    initial_game = ConnectNGame(board_size=4, n=3)
-    mcts_rollout_player = MCTSRolloutPlayer(playout_num=1000)
-    mcts_pure_player = MCTSPlayer(c_puct=5, n_playout=1000)
-    battle(initial_game, mcts_rollout_player, mcts_pure_player, n_games=20)
 
 def minimax_mcts():
     initial_game = ConnectNGame(board_size=4, n=3)

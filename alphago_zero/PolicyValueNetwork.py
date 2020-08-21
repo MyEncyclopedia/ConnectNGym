@@ -78,7 +78,6 @@ class Net(nn.Module):
 
 
 class PolicyValueNet:
-    """policy-value network """
     def __init__(self, board_width: int, board_height: int, model_file=None, use_gpu=False):
         self.use_gpu = use_gpu
         self.board_width = board_width
