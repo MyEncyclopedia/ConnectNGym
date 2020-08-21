@@ -74,7 +74,7 @@ class MCTSRolloutPlayer(BaseAgent):
             leaf_value = 1.0 if result == player else -1.0
 
         # Update value and visit count of nodes in this traversal.
-        node.update_up_to_root(leaf_value)
+        node.propagate_to_root(leaf_value)
 
     def _rollout_simulate_to_end(self, game: ConnectNGame) -> GameResult:
         """Use the rollout policy to play until the end of the game,

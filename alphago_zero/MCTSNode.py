@@ -7,68 +7,86 @@ from ConnectNGame import Pos
 
 
 class TreeNode:
-    """A node in the MCTS tree.
-
-    Each node keeps track of its own value Q, prior probability P, and
-    its visit-count-adjusted prior score u.
     """
-    c_puct: ClassVar[int] = 5
+    MCTS Tree Node
+    """
 
-    def __init__(self, parent_node: TreeNode, prior_p: float):
+    c_puct: ClassVar[int] = 5  # class-wise global param c_puct
+
+    _parent: TreeNode
+    _children: Dict[int, TreeNode]  # map from action to TreeNode
+    _visit_num: int
+    _Q: float   # Q value of the node
+    _U: float   # indicates exploration factor
+    _prior: float
+
+    def __init__(self, parent_node: TreeNode, prior: float):
         self._parent = parent_node
-        self._children: Dict[int, TreeNode] = {}  # a map from action to TreeNode
+        self._children = {}
         self._visit_num = 0
-        self._Q = 0
-        self._u = 0
-        self._P = prior_p
+        self._Q = 0.0
+        self._U = 0.0
+        self._prior = prior
 
     def expand(self, action: int, prob: np.float) -> TreeNode:
-        """Expand tree by creating new children.
-        action_priors: a list of tuples of actions and their prior probability
-            according to the policy function.
+        """
+        Expands the node by adding one child
+
+        :param action: which action leads from current node to the child
+        :param prob: initial prob of choosing the child
+        :return: the newly created child
         """
         child_node = TreeNode(self, prob)
         self._children[action] = child_node
         return child_node
 
     def select(self) -> Tuple[Pos, TreeNode]:
-        """Select action among children that gives maximum action value Q
-        plus bonus u(P).
-        Return: A tuple of (action, next_node)
+        """
+        Selects an action(Pos) having max UCB value.
+
+        :return: Action and corresponding node
         """
         return max(self._children.items(), key=lambda act_node: act_node[1].get_node_ucb())
 
-    def update(self, leaf_value: float):
-        """Update node values from leaf evaluation.
-        leaf_value: the value of subtree evaluation from the current player's
-            perspective.
+
+    def propagate_to_root(self, leaf_value: float):
         """
-        # Count visit.
+        Updates current node with observed leaf_value and propagates to root node.
+
+        :param leaf_value:
+        :return:
+        """
+        if self._parent:
+            self._parent.propagate_to_root(-leaf_value)
+        self._update(leaf_value)
+
+    def _update(self, leaf_value: float):
+        """
+        Updates the node by newly observed leaf_value.
+
+        :param leaf_value:
+        :return:
+        """
         self._visit_num += 1
-        # Update Q, a running average of values for all visits.
+        # new Q is updated towards deviation from existing Q
         self._Q += 0.2 * (leaf_value - self._Q)
 
-    def update_up_to_root(self, leaf_value: float):
-        """Like a call to update(), but applied recursively for all ancestors.
-        """
-        # If it is not root, this node's parent should be updated first.
-        if self._parent:
-            self._parent.update_up_to_root(-leaf_value)
-        self.update(leaf_value)
-
     def get_node_ucb(self) -> float:
-        """Calculate and return the value for this node.
-        It is a combination of leaf evaluations Q, and this node's prior
-        adjusted for its visit count, u.
-        c_puct: a number in (0, inf) controlling the relative impact of
-            value Q, and prior probability P, on this node's score.
         """
-        self._u = (TreeNode.c_puct * self._P * np.sqrt(self._parent._visit_num) / (1 + self._visit_num))
-        return self._Q + self._u
+        Computes UCB of the node.
+
+        :return:
+        """
+        self._U = (TreeNode.c_puct * self._prior * np.sqrt(self._parent._visit_num) / (1 + self._visit_num))
+        return self._Q + self._U
 
     def is_leaf(self) -> bool:
-        """Check if leaf node (i.e. no nodes below this have been expanded)."""
-        return self._children == {}
+        """
+        Checks if the node is not expanded yet. It may be a terminal node as well.
+
+        :return:
+        """
+        return len(self._children) == 0
 
 
 
