@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Monte Carlo Tree Search in AlphaGo Zero style, which uses a policy-value
-network to guide the tree search and evaluate the leaf nodes
-
-"""
-
 from __future__ import annotations
 from typing import List, Tuple, Dict, Iterator, ClassVar, Any
 import numpy as np
@@ -55,7 +49,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
 
         states: List[NetGameState] = []
         probs: List[ActionProbs] = []
-        current_players: List[float] = []
+        current_players: List[np.float] = []
         while True:
             move, move_probs = self._get_action(game)
             states.append(convert_game_state(game))

@@ -17,12 +17,11 @@ from alphago_zero.PolicyValueNetwork import PolicyValueNet, NetGameState, Action
 from alphago_zero.battle import battle
 
 
-def update_policy(mini_batch: List[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]],
+def update_policy(batch: List[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]],
                   policy_value_net: PolicyValueNet) -> Tuple[float, float]:
-    """update the policy-value net"""
-    state_batch = [data[0] for data in mini_batch]
-    probs_batch = [data[1] for data in mini_batch]
-    winner_batch = [data[2] for data in mini_batch]
+    state_batch = [data[0] for data in batch]
+    probs_batch = [data[1] for data in batch]
+    winner_batch = [data[2] for data in batch]
     old_probs, old_v = policy_value_net.policy_value(state_batch)
     for i in range(args.epochs):
         loss, entropy = policy_value_net.train_step(state_batch, probs_batch, winner_batch, args.learning_rate)
@@ -31,7 +30,7 @@ def update_policy(mini_batch: List[Tuple[NetGameState, ActionProbs, NDArray[(Any
         if kl > args.kl_targ * 4:  # early stopping if D_KL diverges badly
             break
 
-    logging.warning(f'kl:{kl:.5f}, loss:{loss}, entropy:{entropy}')
+    logging.warning(f'loss:{loss}, entropy:{entropy}, kl:{kl:.5f}')
     return loss, entropy
 
 
@@ -46,12 +45,12 @@ def train():
     for i in range(args.game_batch_num):
         game = copy.deepcopy(initial_game)
         one_game_records = alphago_zero_player.self_play_one_game(game)
-        game_records.extend(one_game_records)
         episode_len = len(one_game_records)
-        logging.warning(f'batch i:{i + 1}, episode_len:{episode_len}, records_len:{len(game_records)}')
+        game_records.extend(one_game_records)
+        logging.warning(f'batch i:{i + 1}, episode_len:{episode_len}, records_total:{len(game_records)}')
         if len(game_records) > args.batch_size:
-            mini_batch = random.sample(game_records, args.batch_size)
-            loss, entropy = update_policy(mini_batch, policy_value_net, args)
+            training_batch = random.sample(game_records, args.batch_size)
+            loss, entropy = update_policy(training_batch, policy_value_net, args)
 
         # if i % 50 == 0:
         #     test_model(policy_value_net)
