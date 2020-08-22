@@ -87,17 +87,17 @@ class PlannedMinimaxStrategy(Strategy):
             return ret
 
     def _update_dp(self, status: GameStatus, result: GameResult):
-        similarStates = self.get_similar_status(status)
-        for s in similarStates:
+        similar_states = self.get_similar_status(status)
+        for s in similar_states:
             if not s in self.dp_map:
                 self.dp_map[s] = result
 
     def get_similar_status(self, status: GameStatus) -> List[GameStatus]:
         ret = []
-        rotatedS = status
+        rotated_s = status
         for _ in range(4):
-            rotatedS = self.rotate(rotatedS)
-            ret.append(rotatedS)
+            rotated_s = self.rotate(rotated_s)
+            ret.append(rotated_s)
         return ret
 
     def rotate(self, status: GameStatus) -> GameStatus:

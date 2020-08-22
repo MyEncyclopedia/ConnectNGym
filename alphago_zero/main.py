@@ -54,10 +54,10 @@ def train():
             loss, entropy = update_policy(mini_batch, policy_value_net, args)
 
         if i % 50 == 0:
-            battle_and_save_model(policy_value_net)
+            test_model(policy_value_net)
 
 
-def battle_and_save_model(policy_value_net):
+def test_model(policy_value_net):
     initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
     alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num,
                                                 initial_state=initial_game)
