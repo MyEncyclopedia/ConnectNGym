@@ -11,15 +11,12 @@ class TreeNode:
     MCTS Tree Node
     """
 
-    c_puct: ClassVar[int] = 5  # class-wise global param c_puct.
-    # todo
-    # Its value ranges in (0, inf), controlling how quickly exploration converges to the maximum-value policy. A higher value means relying on the prior more.
+    c_puct: ClassVar[int] = 5  # class-wise global param c_puct, exploration weight.
 
     _parent: TreeNode
     _children: Dict[int, TreeNode]  # map from action to TreeNode
     _visit_num: int
-    _Q: float   # Q value of the node
-    _U: float   # indicates exploration factor
+    _Q: float   # Q value of the node, which is the mean action value.
     _prior: float
 
     def __init__(self, parent_node: TreeNode, prior: float):
@@ -27,7 +24,6 @@ class TreeNode:
         self._children = {}
         self._visit_num = 0
         self._Q = 0.0
-        self._U = 0.0
         self._prior = prior
 
     def expand(self, action: int, prob: np.float) -> TreeNode:
@@ -75,12 +71,12 @@ class TreeNode:
 
     def get_node_ucb(self) -> float:
         """
-        Computes UCB of the node.
+        Computes AlphaGo Zero PUCT (polynomial upper confidence trees) of the node.
 
-        :return:
+        :return: Node PUCT value.
         """
-        self._U = (TreeNode.c_puct * self._prior * np.sqrt(self._parent._visit_num) / (1 + self._visit_num))
-        return self._Q + self._U
+        U = (TreeNode.c_puct * self._prior * np.sqrt(self._parent._visit_num) / (1 + self._visit_num))
+        return self._Q + U
 
     def is_leaf(self) -> bool:
         """
