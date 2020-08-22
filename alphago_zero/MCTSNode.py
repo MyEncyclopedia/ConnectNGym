@@ -75,7 +75,7 @@ class TreeNode:
         """
         self._visit_num += 1
         # new Q is updated towards deviation from existing Q
-        self._Q += 0.2 * (leaf_value - self._Q)
+        self._Q += 0.5 * (leaf_value - self._Q)
 
     def is_leaf(self) -> bool:
         """

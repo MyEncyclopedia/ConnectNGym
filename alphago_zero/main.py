@@ -45,7 +45,7 @@ def train():
 
     for i in range(args.game_batch_num):
         game = copy.deepcopy(initial_game)
-        winner, one_game_records = alphago_zero_player.self_play_one_game(game)
+        one_game_records = alphago_zero_player.self_play_one_game(game)
         game_records.extend(one_game_records)
         episode_len = len(one_game_records)
         logging.warning(f'batch i:{i + 1}, episode_len:{episode_len}, records_len:{len(game_records)}')
@@ -53,8 +53,8 @@ def train():
             mini_batch = random.sample(game_records, args.batch_size)
             loss, entropy = update_policy(mini_batch, policy_value_net, args)
 
-        if i % 50 == 0:
-            test_model(policy_value_net)
+        # if i % 50 == 0:
+        #     test_model(policy_value_net)
 
 
 def test_model(policy_value_net):

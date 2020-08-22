@@ -46,38 +46,31 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         self.reset()
 
     def self_play_one_game(self, game: ConnectNGame) \
-            -> Tuple[GameResult, List[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]]]:
+            -> List[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]]:
         """
 
+        :param game:
         :return:
-            winner: int
-            List[]
-        """
-        """ start a self-play game using a MCTS player, reuse the search tree,
-        and store the self-play data: (state, mcts_probs, z) for training
         """
 
         states: List[NetGameState] = []
-        mcts_probs: List[ActionProbs] = []
+        probs: List[ActionProbs] = []
         current_players: List[float] = []
         while True:
             move, move_probs = self._get_action(game)
-            # store the data
             states.append(convert_game_state(game))
-            mcts_probs.append(move_probs)
+            probs.append(move_probs)
             current_players.append(game.current_player)
-            # perform a move
             game.move(move)
 
             if game.game_over:
-                # winner from the perspective of the current player of each state
-                winners_z = np.zeros(len(current_players))
+                current_player_z = np.zeros(len(current_players))
                 if game.game_result != ConnectNGame.RESULT_TIE:
-                    winners_z[np.array(current_players) == game.game_result] = 1.0
-                    winners_z[np.array(current_players) != game.game_result] = -1.0
+                    current_player_z[np.array(current_players) == game.game_result] = 1.0
+                    current_player_z[np.array(current_players) != game.game_result] = -1.0
 
                 self.reset()
-                return game.game_result, list(zip(states, mcts_probs, winners_z))
+                return list(zip(states, probs, current_player_z))
 
     def get_action(self, board: PyGameBoard) -> Pos:
         """
