@@ -35,12 +35,14 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
     _playout_num: int
     _root: TreeNode
     _initial_state: ConnectNGame  # used in reset() to construct root node.
+    _is_training: bool
 
-    def __init__(self, policy_value_net: PolicyValueNet, initial_state: ConnectNGame, playout_num=1000):
+    def __init__(self, policy_value_net: PolicyValueNet, initial_state: ConnectNGame, playout_num=1000, is_training=True):
         self._policy_value_net = policy_value_net
         self._playout_num = playout_num
         self._initial_state = initial_state
         self._root = None
+        self._is_training = is_training
         self.reset()
 
     def self_play_one_game(self, game: ConnectNGame) \
@@ -59,7 +61,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         mcts_probs: List[ActionProbs] = []
         current_players: List[float] = []
         while True:
-            move, move_probs = self.train_get_next_action(game)
+            move, move_probs = self._get_action(game)
             # store the data
             states.append(convert_game_state(game))
             mcts_probs.append(move_probs)
@@ -84,16 +86,16 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         :param board:
         :return:
         """
-        return self.train_get_next_action(copy.deepcopy(board.connect_n_game))[0]
+        return self._get_action(copy.deepcopy(board.connect_n_game))[0]
 
-    def train_get_next_action(self, game: ConnectNGame, self_play=True) -> Tuple[MoveWithProb]:
+    def _get_action(self, game: ConnectNGame) -> Tuple[MoveWithProb]:
         avail_pos = game.get_avail_pos()
         move_probs: ActionProbs = np.zeros(game.board_size * game.board_size)
         if len(avail_pos) > 0:
             # the pi defined in AlphaGo Zero paper
             acts, probs = self._next_step(game)
             move_probs[list(acts)] = probs
-            if self_play:
+            if self._is_training:
                 # add Dirichlet Noise when training to favour exploration
                 move = np.random.choice(acts, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
                 assert move in game.get_avail_pos()
