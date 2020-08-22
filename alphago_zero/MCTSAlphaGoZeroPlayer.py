@@ -67,16 +67,15 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
             # perform a move
             game.move(move)
 
-            end, result = game.game_over, game.game_result
-            if end:
+            if game.game_over:
                 # winner from the perspective of the current player of each state
                 winners_z = np.zeros(len(current_players))
-                if result != ConnectNGame.RESULT_TIE:
-                    winners_z[np.array(current_players) == result] = 1.0
-                    winners_z[np.array(current_players) != result] = -1.0
+                if game.game_result != ConnectNGame.RESULT_TIE:
+                    winners_z[np.array(current_players) == game.game_result] = 1.0
+                    winners_z[np.array(current_players) != game.game_result] = -1.0
 
                 self.reset()
-                return result, list(zip(states, mcts_probs, winners_z))
+                return game.game_result, list(zip(states, mcts_probs, winners_z))
 
     def get_action(self, board: PyGameBoard) -> Pos:
         """
