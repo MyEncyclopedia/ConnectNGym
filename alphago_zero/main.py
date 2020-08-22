@@ -43,8 +43,6 @@ def train():
     policy_value_net = PolicyValueNet(args.board_size, args.board_size, use_gpu=args.use_cuda)
     alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
 
-    best_win_ratio = 0.0
-
     for i in range(args.game_batch_num):
         game = copy.deepcopy(initial_game)
         winner, one_game_records = alphago_zero_player.self_play_one_game(game)
@@ -55,22 +53,27 @@ def train():
             mini_batch = random.sample(game_records, args.batch_size)
             loss, entropy = update_policy(mini_batch, policy_value_net, args)
 
-        # check the performance of the current model,and save the model params
-        if i % args.check_freq == 0:
-            initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
-            alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num, initial_state=initial_game)
-            mcts_rollout_player = MCTSRolloutPlayer(playout_num=args.rollout_playout_num)
-            win_ratio = battle(initial_game, alphago_zero_player, mcts_rollout_player, n_games=3)
-            logging.warning(f'current self-play batch: {i+1}, win_ratio:{win_ratio:.3f}')
-            policy_value_net.save_model('./current_policy.model')
-            if win_ratio > best_win_ratio:
-                logging.warning(f'best policy {win_ratio:.3f}')
-                best_win_ratio = win_ratio
-                # update the best_policy
-                policy_value_net.save_model('./best_policy.model')
-                # if best_win_ratio == 1.0 and args.rollout_playout_num < 5000:
-                #     args.rollout_playout_num += 1000
-                #     best_win_ratio = 0.0
+        if i % 50 == 0:
+            battle_and_save_model(policy_value_net)
+
+
+def battle_and_save_model(policy_value_net):
+    initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
+    alphago_zero_player = MCTSAlphaGoZeroPlayer(policy_value_net, playout_num=args.playout_num,
+                                                initial_state=initial_game)
+    mcts_rollout_player = MCTSRolloutPlayer(playout_num=args.rollout_playout_num)
+    win_ratio = battle(initial_game, alphago_zero_player, mcts_rollout_player, n_games=3)
+    logging.warning(f'current self-play batch: {i + 1}, win_ratio:{win_ratio:.3f}')
+    policy_value_net.save_model('./current_policy.model')
+    if win_ratio > args.best_win_ratio:
+        logging.warning(f'best policy {win_ratio:.3f}')
+        best_win_ratio = win_ratio
+        # update the best_policy
+        policy_value_net.save_model('./best_policy.model')
+        # if best_win_ratio == 1.0 and args.rollout_playout_num < 5000:
+        #     args.rollout_playout_num += 1000
+        #     best_win_ratio = 0.0
+
 
 def logging_config():
     import logging.config
@@ -86,17 +89,13 @@ def parse_args():
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--board_size", type=int, default=4)
     parser.add_argument("--n_in_row", type=int, default=3)
-    # training params
     parser.add_argument("--learning_rate", type=float, default=2e-3)
-    parser.add_argument("--temperature", type=float, default=1.0)  # the temperature param
     parser.add_argument("--playout_num", type=int, default=1000)  # num of simulations for each move
     parser.add_argument("--rollout_playout_num", type=int, default=900)  # num of simulations for each move
-    parser.add_argument("--c_puct", type=int, default=5)
     parser.add_argument("--buffer_size", type=int, default=10000)
     parser.add_argument("--batch_size", type=int, default=64)  # mini-batch size for training
     parser.add_argument("--epochs", type=int, default=8)  # num of train_steps for each update
     parser.add_argument("--kl_targ", type=float, default=0.02)
-    parser.add_argument("--check_freq", type=int, default=50)
     parser.add_argument("--game_batch_num", type=int, default=3000)
     parser.add_argument("--best_win_ratio", type=float, default=0.0)
 
@@ -113,6 +112,4 @@ def parse_args():
 if __name__ == "__main__":
     logging_config()
     args = parse_args()
-    MCTSNode.c_puct = args.c_puct
-    MCTSAlphaGoZeroPlayer.temperature = args.temperature
     train()

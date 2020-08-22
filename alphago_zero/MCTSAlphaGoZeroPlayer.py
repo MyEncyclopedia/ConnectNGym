@@ -29,7 +29,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
     # It is emptied after reset() is called.
     status_2_node_map: ClassVar[Dict[GameStatus, TreeNode]] = {}  # GameStatus => TreeNode
     # temperature param during training
-    temperature: float
+    temperature: float = 1.0
 
     _policy_value_net: PolicyValueNet
     _playout_num: int
@@ -150,6 +150,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
             act, node = node.select()
             game.move(act)
 
+        # now game state is a leaf node in the tree, either a terminal node or an unexplored node
         act_and_probs: Iterator[MoveWithProb]
         act_and_probs, leaf_value = self._policy_value_net.policy_value_fn(game)
 
@@ -169,5 +170,5 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
             leaf_value = float(leaf_value)
 
         # Update leaf_value until root node
-        node.propagate_to_root(leaf_value)
+        node.propagate_to_root(-leaf_value)
 

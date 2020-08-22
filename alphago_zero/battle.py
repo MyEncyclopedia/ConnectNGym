@@ -5,17 +5,17 @@ from collections import defaultdict
 from ConnectNGame import ConnectNGame
 from ConnectNGym import ConnectNGym
 from PyGameConnectN import PyGameBoard
-from agent import play, AIAgent
+from agent import play, AIAgent, BaseAgent
 from alphago_zero.MCTSRolloutPlayer import MCTSRolloutPlayer
 from minimax.PlannedStrategy import PlannedMinimaxStrategy
 
 
-def battle(initial_game: ConnectNGame, player_first, player_second, n_games=10):
+def battle(initial_game: ConnectNGame, player1: BaseAgent, player2: BaseAgent, n_games=10) -> float:
     win_counts = defaultdict(int)
     board = PyGameBoard(connect_n_game=copy.deepcopy(initial_game))
     env = ConnectNGym(board, display_milli_sec=100)
     for i in range(n_games):
-        winner = play(env, player_first, player_second, render=False)
+        winner = play(env, player1, player2, render=False)
         win_counts[winner] += 1
     logging.warning(f'first: win: {win_counts[1]}, lose: {win_counts[-1]}, tie:{win_counts[0]}')
     # for i in range(n_games):

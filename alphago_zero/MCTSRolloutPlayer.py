@@ -8,34 +8,18 @@ import copy
 from PyGameConnectN import PyGameBoard
 from alphago_zero.MCTSNode import TreeNode
 from agent import BaseAgent
-from ConnectNGame import ConnectNGame, GameStatus, Pos, GameResult
+from ConnectNGame import ConnectNGame, Pos, GameResult
 from operator import itemgetter
 
 from alphago_zero.PolicyValueNetwork import MoveWithProb
 
 
 class MCTSRolloutPlayer(BaseAgent):
-    """An implementation of Monte Carlo Tree Search."""
-    # status_2_node_map: ClassVar[Dict[GameStatus, TreeNode]] = {}  # gameStatus => TreeNode
 
     def __init__(self, playout_num=1000):
-        """
-        policy_value_fn: a function that takes in a board state and outputs
-            a list of (action, probability) tuples and also a score in [-1, 1]
-            (i.e. the expected value of the end game score from the current
-            player's perspective) for the current player.
-        c_puct: a number in (0, inf) that controls how quickly exploration
-            converges to the maximum-value policy. A higher value means
-            relying on the prior more.
-        """
         self._playout_num = playout_num
 
     def get_action(self, board: PyGameBoard) -> Pos:
-        """Runs all playouts sequentially and returns the most visited action.
-        state: the current game state
-
-        Return: the selected action
-        """
         game = copy.deepcopy(board.connect_n_game)
         node = TreeNode(None, 1.0)
 
@@ -73,7 +57,6 @@ class MCTSRolloutPlayer(BaseAgent):
         else:
             leaf_value = 1.0 if result == player else -1.0
 
-        # Update value and visit count of nodes in this traversal.
         node.propagate_to_root(leaf_value)
 
     def _rollout_simulate_to_end(self, game: ConnectNGame) -> GameResult:
