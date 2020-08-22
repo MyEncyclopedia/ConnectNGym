@@ -9,53 +9,16 @@ import numpy as np
 import torch
 from nptyping import NDArray
 
-from ConnectNGame import ConnectNGame, GameResult
+from ConnectNGame import ConnectNGame
 from alphago_zero import MCTSNode
 from alphago_zero.MCTSAlphaGoZeroPlayer import MCTSAlphaGoZeroPlayer
 from alphago_zero.MCTSRolloutPlayer import MCTSRolloutPlayer
-from alphago_zero.PolicyValueNetwork import PolicyValueNet, convert_game_state, NetGameState, ActionProbs
+from alphago_zero.PolicyValueNetwork import PolicyValueNet, NetGameState, ActionProbs
 from alphago_zero.battle import battle
 
 
-def self_play_one_game(player: MCTSAlphaGoZeroPlayer, game: ConnectNGame, temperature: float) \
-        -> Tuple[GameResult, List[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]]]:
-    """
-
-    :param player:
-    :param args:
-    :param show_gui:
-    :return:
-        winner: int
-        List[]
-    """
-    """ start a self-play game using a MCTS player, reuse the search tree,
-    and store the self-play data: (state, mcts_probs, z) for training
-    """
-
-    states: List[NetGameState] = []
-    mcts_probs: List[ActionProbs] = []
-    current_players: List[float] = []
-    while True:
-        move, move_probs = player.train_get_next_action(game, temperature=temperature)
-        # store the data
-        states.append(convert_game_state(game))
-        mcts_probs.append(move_probs)
-        current_players.append(game.current_player)
-        # perform a move
-        game.move(move)
-
-        end, result = game.game_over, game.game_result
-        if end:
-            # winner from the perspective of the current player of each state
-            winners_z = np.zeros(len(current_players))
-            if result != ConnectNGame.RESULT_TIE:
-                winners_z[np.array(current_players) == result] = 1.0
-                winners_z[np.array(current_players) != result] = -1.0
-            return result, list(zip(states, mcts_probs, winners_z))
-
-
 def update_policy(mini_batch: List[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]],
-                  policy_value_net: PolicyValueNet, args) -> Tuple[float, float]:
+                  policy_value_net: PolicyValueNet) -> Tuple[float, float]:
     """update the policy-value net"""
     state_batch = [data[0] for data in mini_batch]
     probs_batch = [data[1] for data in mini_batch]
@@ -72,7 +35,7 @@ def update_policy(mini_batch: List[Tuple[NetGameState, ActionProbs, NDArray[(Any
     return loss, entropy
 
 
-def train(args):
+def train():
     initial_game = ConnectNGame(board_size=args.board_size, n=args.n_in_row)
     game_records: deque[Tuple[NetGameState, ActionProbs, NDArray[(Any), np.float]]]
     game_records = deque(maxlen=args.buffer_size)
@@ -84,8 +47,8 @@ def train(args):
 
     for i in range(args.game_batch_num):
         game = copy.deepcopy(initial_game)
-        winner, one_game_records = self_play_one_game(alphago_zero_player, game, temperature=args.temperature)
-        alphago_zero_player.reset()
+        winner, one_game_records = alphago_zero_player.self_play_one_game(game)
+        # alphago_zero_player.reset()
         game_records.extend(one_game_records)
         episode_len = len(one_game_records)
         logging.warning(f'batch i:{i + 1}, episode_len:{episode_len}, records_len:{len(game_records)}')
@@ -150,4 +113,5 @@ if __name__ == "__main__":
     logging_config()
     args = parse_args()
     MCTSNode.c_puct = args.c_puct
-    train(args)
+    MCTSAlphaGoZeroPlayer.temperature = args.temperature
+    train()
