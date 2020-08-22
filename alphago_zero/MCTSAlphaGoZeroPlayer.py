@@ -93,14 +93,14 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         move_probs: ActionProbs = np.zeros(game.board_size * game.board_size)
         if len(avail_pos) > 0:
             # the pi defined in AlphaGo Zero paper
-            acts, probs = self._next_step_play_act_probs(game)
-            move_probs[list(acts)] = probs
+            acts, act_probs = self._next_step_play_act_probs(game)
+            move_probs[list(acts)] = act_probs
             if self._is_training:
                 # add Dirichlet Noise when training in favour of exploration
-                move = np.random.choice(acts, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
+                move = np.random.choice(acts, p=0.75 * act_probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(act_probs))))
                 assert move in game.get_avail_pos()
             else:
-                move = np.random.choice(acts, p=probs)
+                move = np.random.choice(acts, p=act_probs)
 
             return move, move_probs
         else:
@@ -124,8 +124,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         """
 
         for n in range(self._playout_num):
-            state_copy = copy.deepcopy(game)
-            self._playout(state_copy)
+            self._playout(copy.deepcopy(game))
 
         current_node = MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()]
         act_visits = [(act, node._visit_num) for act, node in current_node._children.items()]
@@ -139,6 +138,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         From current game status, run a sequence down to a leaf node, either because game ends or unexplored node.
         Get the leaf value of the leaf node, either the actual reward of game or action value returned by policy net.
         And propagate upwards to root node.
+
         :param game:
         """
         player_id = game.current_player
@@ -147,17 +147,17 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         while True:
             if node.is_leaf():
                 break
-            action, node = node.select()
-            game.move(action)
+            act, node = node.select()
+            game.move(act)
 
-        action_and_probs: Iterator[MoveWithProb]
-        action_and_probs, leaf_value = self._policy_value_net.policy_value_fn(game)
+        act_and_probs: Iterator[MoveWithProb]
+        act_and_probs, leaf_value = self._policy_value_net.policy_value_fn(game)
 
         if not game.game_over:
             # case where encountering an unexplored leaf node, update leaf_value estimated by policy net to root
-            for action, prob in action_and_probs:
-                game.move(action)
-                child_node = node.expand(action, prob)
+            for act, prob in act_and_probs:
+                game.move(act)
+                child_node = node.expand(act, prob)
                 MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()] = child_node
                 game.undo()
         else:

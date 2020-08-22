@@ -48,7 +48,6 @@ def train():
     for i in range(args.game_batch_num):
         game = copy.deepcopy(initial_game)
         winner, one_game_records = alphago_zero_player.self_play_one_game(game)
-        # alphago_zero_player.reset()
         game_records.extend(one_game_records)
         episode_len = len(one_game_records)
         logging.warning(f'batch i:{i + 1}, episode_len:{episode_len}, records_len:{len(game_records)}')
@@ -105,8 +104,10 @@ def parse_args():
     if args.gpu >= 0 and torch.cuda.is_available():
         args.use_cuda = True
         torch.cuda.device(args.gpu)
+        logging.warning(f'using gpu device {args.gpu}')
     else:
         args.use_cuda = False
+        logging.warning(f'using cpu')
     return args
 
 if __name__ == "__main__":
