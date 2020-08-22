@@ -11,7 +11,7 @@ class TreeNode:
     MCTS Tree Node
     """
 
-    c_puct: ClassVar[int] = 5  # class-wise global param c_puct, exploration weight.
+    c_puct: ClassVar[int] = 5  # class-wise global param c_puct, exploration weight factor.
 
     _parent: TreeNode
     _children: Dict[int, TreeNode]  # map from action to TreeNode
@@ -25,6 +25,15 @@ class TreeNode:
         self._visit_num = 0
         self._Q = 0.0
         self._prior = prior
+
+    def get_puct(self) -> float:
+        """
+        Computes AlphaGo Zero PUCT (polynomial upper confidence trees) of the node.
+
+        :return: Node PUCT value.
+        """
+        U = (TreeNode.c_puct * self._prior * np.sqrt(self._parent._visit_num) / (1 + self._visit_num))
+        return self._Q + U
 
     def expand(self, action: int, prob: np.float) -> TreeNode:
         """
@@ -44,7 +53,7 @@ class TreeNode:
 
         :return: Action and corresponding node
         """
-        return max(self._children.items(), key=lambda act_node: act_node[1].get_node_ucb())
+        return max(self._children.items(), key=lambda act_node: act_node[1].get_puct())
 
 
     def propagate_to_root(self, leaf_value: float):
@@ -68,15 +77,6 @@ class TreeNode:
         self._visit_num += 1
         # new Q is updated towards deviation from existing Q
         self._Q += 0.2 * (leaf_value - self._Q)
-
-    def get_node_ucb(self) -> float:
-        """
-        Computes AlphaGo Zero PUCT (polynomial upper confidence trees) of the node.
-
-        :return: Node PUCT value.
-        """
-        U = (TreeNode.c_puct * self._prior * np.sqrt(self._parent._visit_num) / (1 + self._visit_num))
-        return self._Q + U
 
     def is_leaf(self) -> bool:
         """
