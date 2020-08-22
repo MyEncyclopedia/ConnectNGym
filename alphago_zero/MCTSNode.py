@@ -55,7 +55,6 @@ class TreeNode:
         """
         return max(self._children.items(), key=lambda act_node: act_node[1].get_puct())
 
-
     def propagate_to_root(self, leaf_value: float):
         """
         Updates current node with observed leaf_value and propagates to root node.
@@ -63,9 +62,9 @@ class TreeNode:
         :param leaf_value:
         :return:
         """
+        self._update(leaf_value)
         if self._parent:
             self._parent.propagate_to_root(-leaf_value)
-        self._update(leaf_value)
 
     def _update(self, leaf_value: float):
         """

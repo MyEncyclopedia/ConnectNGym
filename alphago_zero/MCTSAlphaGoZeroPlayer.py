@@ -93,10 +93,10 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         move_probs: ActionProbs = np.zeros(game.board_size * game.board_size)
         if len(avail_pos) > 0:
             # the pi defined in AlphaGo Zero paper
-            acts, probs = self._next_step(game)
+            acts, probs = self._next_step_play_act_probs(game)
             move_probs[list(acts)] = probs
             if self._is_training:
-                # add Dirichlet Noise when training to favour exploration
+                # add Dirichlet Noise when training in favour of exploration
                 move = np.random.choice(acts, p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs))))
                 assert move in game.get_avail_pos()
             else:
@@ -104,7 +104,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
 
             return move, move_probs
         else:
-            raise Exception('No actions')
+            raise Exception('No available actions')
 
     def reset(self):
         """
@@ -114,17 +114,19 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         self._root = TreeNode(None, 1.0)
         MCTSAlphaGoZeroPlayer.status_2_node_map[self._initial_state.get_status()] = self._root
 
-    def _next_step(self, game: ConnectNGame) -> Tuple[List[Pos], ActionProbs]:
-        """Run all playouts sequentially and return the available actions and
-        their corresponding probabilities.
-        state: the current game state
-        temp: temperature parameter in (0, 1] controls the level of exploration
+    def _next_step_play_act_probs(self, game: ConnectNGame) -> Tuple[List[Pos], ActionProbs]:
         """
+        For the given game status, run playouts number of times specified by self._playout_num.
+        Returns the action distribution according to AlphaGo Zero MCTS play formula.
+
+        :param game:
+        :return:
+        """
+
         for n in range(self._playout_num):
             state_copy = copy.deepcopy(game)
             self._playout(state_copy)
 
-        # calc the move probabilities based on visit counts at the root node
         current_node = MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()]
         act_visits = [(act, node._visit_num) for act, node in current_node._children.items()]
         acts, visits = zip(*act_visits)
@@ -133,40 +135,39 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         return acts, act_probs
 
     def _playout(self, game: ConnectNGame):
-        """Run a single playout from the root to the leaf, getting a value at
-        the leaf and propagating it back through its parents.
-        State is modified in-place, so a copy must be provided.
         """
-        player = game.current_player
+        From current game status, run a sequence down to a leaf node, either because game ends or unexplored node.
+        Get the leaf value of the leaf node, either the actual reward of game or action value returned by policy net.
+        And propagate upwards to root node.
+        :param game:
+        """
+        player_id = game.current_player
 
         node = MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()]
         while True:
             if node.is_leaf():
                 break
-            # Greedily select next move.
             action, node = node.select()
             game.move(action)
 
-        # Evaluate the leaf using a network which outputs a list of
-        # (action, probability) tuples p and also a score v in [-1, 1]
-        # for the current player.
+        action_and_probs: Iterator[MoveWithProb]
         action_and_probs, leaf_value = self._policy_value_net.policy_value_fn(game)
-        # Check for end of game.
-        end, winner = game.game_over, game.game_result
-        if not end:
+
+        if not game.game_over:
+            # case where encountering an unexplored leaf node, update leaf_value estimated by policy net to root
             for action, prob in action_and_probs:
                 game.move(action)
                 child_node = node.expand(action, prob)
                 MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()] = child_node
-                # print(f'nodes {len(MCTS.statusToNodeMap)}')
                 game.undo()
         else:
-            if winner == ConnectNGame.RESULT_TIE:
+            # case where game ends, update actual leaf_value to root
+            if game.game_result == ConnectNGame.RESULT_TIE:
                 leaf_value = ConnectNGame.RESULT_TIE
             else:
-                leaf_value = 1 if winner == player else -1
+                leaf_value = 1 if game.game_result == player_id else -1
             leaf_value = float(leaf_value)
 
-        # Update value and visit count of nodes in this traversal.
+        # Update leaf_value until root node
         node.propagate_to_root(leaf_value)
 
