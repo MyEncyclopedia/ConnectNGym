@@ -15,26 +15,34 @@ ActionProbs = NDArray[(Any), np.float]
 MoveWithProb = Tuple[Pos, ActionProbs]
 NetGameState = NDArray[(4, Any, Any), np.int]
 
-def convert_game_state(state: ConnectNGame) -> NetGameState:
-    """return the board state from the perspective of the current player.
-    state shape: 4*width*height
-    """
 
-    square_state = np.zeros((4, state.board_size, state.board_size))
-    if state.action_stack:
-        actions = np.array(state.action_stack) # moves * 2
+def convert_game_state(game: ConnectNGame) -> NetGameState:
+    """
+    Converts game state to type NetGameState as ndarray.
+
+    :param game:
+    :return:
+        Of shape 4 * board_size * board_size.
+        [0] is current player positions.
+        [1] is opponent positions.
+        [2] is last move location.
+        [3] is the color to play.
+    """
+    state_matrix = np.zeros((4, game.board_size, game.board_size))
+
+    if game.action_stack:
+        actions = np.array(game.action_stack)
         move_curr = actions[::2]
         move_oppo = actions[1::2]
-        # todo eliminate for
         for move in move_curr:
-            square_state[0][move] = 1.0
+            state_matrix[0][move] = 1.0
         for move in move_oppo:
-            square_state[1][move] = 1.0
+            state_matrix[1][move] = 1.0
         # indicate the last move location
-        square_state[2][actions[-1]] = 1.0
-    if len(state.action_stack) % 2 == 0:
-        square_state[3][:, :] = 1.0  # indicate the colour to play
-    return square_state[:, ::-1, :]
+        state_matrix[2][actions[-1]] = 1.0
+    if len(game.action_stack) % 2 == 0:
+        state_matrix[3][:, :] = 1.0  # indicate the colour to play
+    return state_matrix[:, ::-1, :]
 
 
 class Net(nn.Module):
@@ -126,8 +134,6 @@ class PolicyValueNet:
 
     def train_step(self, state_batch: List[NetGameState], mcts_probs: List[ActionProbs],
                    winner_batch: List[NDArray[(Any), np.float]], lr) -> Tuple[float, float]:
-        """perform a training step"""
-        # wrap in Variable
         if self.use_gpu:
             state_batch = Variable(torch.FloatTensor(state_batch).cuda())
             mcts_probs = Variable(torch.FloatTensor(mcts_probs).cuda())
@@ -137,15 +143,13 @@ class PolicyValueNet:
             mcts_probs = Variable(torch.FloatTensor(mcts_probs))
             winner_batch = Variable(torch.FloatTensor(winner_batch))
 
-        # zero the parameter gradients
         self.optimizer.zero_grad()
-        # set learning rate
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = lr
 
         # forward
         log_act_probs, value = self.policy_value_net(state_batch)
-        # define the loss = (z - v)^2 - pi^T * log(p) + c||theta||^2
+        # loss = (z - v)^2 - pi^T * log(p) + c||theta||^2
         # Note: the L2 penalty is incorporated in optimizer
         value_loss = F.mse_loss(value.view(-1), winner_batch)
         policy_loss = -torch.mean(torch.sum(mcts_probs*log_act_probs, 1))
