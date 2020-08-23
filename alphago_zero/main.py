@@ -46,7 +46,7 @@ def train():
         game = copy.deepcopy(initial_game)
         one_game_records = alphago_zero_player.self_play_one_game(game)
         episode_len = len(one_game_records)
-        one_game_records = get_equi_data(one_game_records, args.board_size)
+        # one_game_records = get_equi_data(one_game_records, args.board_size)
         game_records.extend(one_game_records)
         logging.warning(f'batch i:{i + 1}, episode_len:{episode_len}, records_total:{len(game_records)}')
         if len(game_records) > args.batch_size:

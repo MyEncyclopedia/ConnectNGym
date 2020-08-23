@@ -145,6 +145,7 @@ if __name__ == '__main__':
     board = PyGameBoard(connectNGame)
     while not board.is_game_over():
         pos = board.next_user_input()
-        board.move_2d(*pos)
+        board.move(pos)
+
 
     pygame.quit()

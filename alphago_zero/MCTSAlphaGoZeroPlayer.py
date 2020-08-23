@@ -40,26 +40,26 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
 
         :param game:
         :return:
+            Sequence of (s, pi, z) of a complete game play. The number of list is the game length.
         """
 
         states: List[NetGameState] = []
         probs: List[ActionProbs] = []
         current_players: List[np.float] = []
-        while True:
+
+        while not game.game_over:
             move, move_probs = self._get_action(game)
             states.append(convert_game_state(game))
             probs.append(move_probs)
             current_players.append(game.current_player)
             game.move(move)
 
-            if game.game_over:
-                current_player_z = np.zeros(len(current_players))
-                if game.game_result != ConnectNGame.RESULT_TIE:
-                    current_player_z[np.array(current_players) == game.game_result] = 1.0
-                    current_player_z[np.array(current_players) != game.game_result] = -1.0
+        current_player_z = np.zeros(len(current_players))
+        current_player_z[np.array(current_players) == game.game_result] = 1.0
+        current_player_z[np.array(current_players) == -game.game_result] = -1.0
+        self.reset()
 
-                self.reset()
-                return list(zip(states, probs, current_player_z))
+        return list(zip(states, probs, current_player_z))
 
     def get_action(self, board: PyGameBoard) -> Pos:
         """
