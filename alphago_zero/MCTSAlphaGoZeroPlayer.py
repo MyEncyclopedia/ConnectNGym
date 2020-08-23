@@ -19,23 +19,18 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
     AlphaGo Zero MCTS player.
     """
 
-    # Keeping track of all nodes in MCTS tree currently constructed.
-    # It is emptied after reset() is called.
-    status_2_node_map: ClassVar[Dict[GameStatus, TreeNode]] = {}  # GameStatus => TreeNode
     # temperature param during training
     temperature: float = 1.0
 
     _policy_value_net: PolicyValueNet
     _playout_num: int
-    _root: TreeNode
-    _initial_state: ConnectNGame  # used in reset() to construct root node.
+    _current_root: TreeNode
     _is_training: bool
 
-    def __init__(self, policy_value_net: PolicyValueNet, initial_state: ConnectNGame, playout_num=1000, is_training=True):
+    def __init__(self, policy_value_net: PolicyValueNet, playout_num=1000, is_training=True):
         self._policy_value_net = policy_value_net
         self._playout_num = playout_num
-        self._initial_state = initial_state
-        self._root = None
+        self._current_root = None
         self._is_training = is_training
         self.reset()
 
@@ -71,35 +66,37 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         Method defined in BaseAgent.
 
         :param board:
-        :return:
+        :return: next move for the given game board.
         """
         return self._get_action(copy.deepcopy(board.connect_n_game))[0]
 
     def _get_action(self, game: ConnectNGame) -> Tuple[MoveWithProb]:
+        epsilon = 0.25
         avail_pos = game.get_avail_pos()
         move_probs: ActionProbs = np.zeros(game.board_size * game.board_size)
-        if len(avail_pos) > 0:
-            # the pi defined in AlphaGo Zero paper
-            acts, act_probs = self._next_step_play_act_probs(game)
-            move_probs[list(acts)] = act_probs
-            if self._is_training:
-                # add Dirichlet Noise when training in favour of exploration
-                move = np.random.choice(acts, p=0.75 * act_probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(act_probs))))
-                assert move in game.get_avail_pos()
-            else:
-                move = np.random.choice(acts, p=act_probs)
+        assert len(avail_pos) > 0
 
-            return move, move_probs
+        # the pi defined in AlphaGo Zero paper
+        acts, act_probs = self._next_step_play_act_probs(game)
+        move_probs[list(acts)] = act_probs
+        if self._is_training:
+            # add Dirichlet Noise when training in favour of exploration
+            p_ = (1-epsilon) * act_probs + epsilon * np.random.dirichlet(0.3 * np.ones(len(act_probs)))
+            move = np.random.choice(acts, p=p_)
+            assert move in game.get_avail_pos()
         else:
-            raise Exception('No available actions')
+            move = np.random.choice(acts, p=act_probs)
+
+        self.reset()
+        return move, move_probs
 
     def reset(self):
         """
         Releases all nodes in MCTS tree and resets root node.
         """
-        MCTSAlphaGoZeroPlayer.status_2_node_map = {}
-        self._root = TreeNode(None, 1.0)
-        MCTSAlphaGoZeroPlayer.status_2_node_map[self._initial_state.get_status()] = self._root
+        # MCTSAlphaGoZeroPlayer.status_2_node_map = {}
+        self._current_root = TreeNode(None, 1.0)
+        # MCTSAlphaGoZeroPlayer.status_2_node_map[self._initial_state.get_status()] = self._current_root
 
     def _next_step_play_act_probs(self, game: ConnectNGame) -> Tuple[List[Pos], ActionProbs]:
         """
@@ -107,14 +104,13 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         Returns the action distribution according to AlphaGo Zero MCTS play formula.
 
         :param game:
-        :return:
+        :return: actions and their probability
         """
 
         for n in range(self._playout_num):
             self._playout(copy.deepcopy(game))
 
-        current_node = MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()]
-        act_visits = [(act, node._visit_num) for act, node in current_node._children.items()]
+        act_visits = [(act, node._visit_num) for act, node in self._current_root._children.items()]
         acts, visits = zip(*act_visits)
         act_probs = softmax(1.0 / MCTSAlphaGoZeroPlayer.temperature * np.log(np.array(visits) + 1e-10))
 
@@ -130,7 +126,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         """
         player_id = game.current_player
 
-        node = MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()]
+        node = self._current_root
         while True:
             if node.is_leaf():
                 break
@@ -146,7 +142,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
             for act, prob in act_and_probs:
                 game.move(act)
                 child_node = node.expand(act, prob)
-                MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()] = child_node
+                # MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()] = child_node
                 game.undo()
         else:
             # case where game ends, update actual leaf_value to root
