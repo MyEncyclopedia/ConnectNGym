@@ -40,7 +40,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
 
         :param game:
         :return:
-            Sequence of (s, pi, z) of a complete game play. The number of list is the game length.
+            Sequence of (s, pi, z) of a complete game play. The number of list is the game play length.
         """
 
         states: List[NetGameState] = []
@@ -94,9 +94,7 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
         """
         Releases all nodes in MCTS tree and resets root node.
         """
-        # MCTSAlphaGoZeroPlayer.status_2_node_map = {}
         self._current_root = TreeNode(None, 1.0)
-        # MCTSAlphaGoZeroPlayer.status_2_node_map[self._initial_state.get_status()] = self._current_root
 
     def _next_step_play_act_probs(self, game: ConnectNGame) -> Tuple[List[Pos], ActionProbs]:
         """
@@ -142,7 +140,6 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
             for act, prob in act_and_probs:
                 game.move(act)
                 child_node = node.expand(act, prob)
-                # MCTSAlphaGoZeroPlayer.status_2_node_map[game.get_status()] = child_node
                 game.undo()
         else:
             # case where game ends, update actual leaf_value to root
@@ -152,6 +149,6 @@ class MCTSAlphaGoZeroPlayer(BaseAgent):
                 leaf_value = 1 if game.game_result == player_id else -1
             leaf_value = float(leaf_value)
 
-        # Update leaf_value until root node
+        # Update leaf_value and propagate up to root node
         node.propagate_to_root(-leaf_value)
 

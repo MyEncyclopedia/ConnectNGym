@@ -132,27 +132,26 @@ class PolicyValueNet:
         value = float(value.data[0][0])
         return zip(avail_pos_list, pos_probs), value
 
-    def train_step(self, state_batch: List[NetGameState], mcts_probs: List[ActionProbs],
-                   winner_batch: List[NDArray[(Any), np.float]], lr) -> Tuple[float, float]:
+    def backward_step(self, state_batch: List[NetGameState], probs_batch: List[ActionProbs],
+                      value_batch: List[NDArray[(Any), np.float]], lr) -> Tuple[float, float]:
         if self.use_gpu:
             state_batch = Variable(torch.FloatTensor(state_batch).cuda())
-            mcts_probs = Variable(torch.FloatTensor(mcts_probs).cuda())
-            winner_batch = Variable(torch.FloatTensor(winner_batch).cuda())
+            probs_batch = Variable(torch.FloatTensor(probs_batch).cuda())
+            value_batch = Variable(torch.FloatTensor(value_batch).cuda())
         else:
             state_batch = Variable(torch.FloatTensor(state_batch))
-            mcts_probs = Variable(torch.FloatTensor(mcts_probs))
-            winner_batch = Variable(torch.FloatTensor(winner_batch))
+            probs_batch = Variable(torch.FloatTensor(probs_batch))
+            value_batch = Variable(torch.FloatTensor(value_batch))
 
         self.optimizer.zero_grad()
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = lr
 
-        # forward
         log_act_probs, value = self.policy_value_net(state_batch)
         # loss = (z - v)^2 - pi^T * log(p) + c||theta||^2
         # Note: the L2 penalty is incorporated in optimizer
-        value_loss = F.mse_loss(value.view(-1), winner_batch)
-        policy_loss = -torch.mean(torch.sum(mcts_probs*log_act_probs, 1))
+        value_loss = F.mse_loss(value.view(-1), value_batch)
+        policy_loss = -torch.mean(torch.sum(probs_batch * log_act_probs, 1))
         loss = value_loss + policy_loss
         # backward and optimize
         loss.backward()
